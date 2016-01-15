@@ -40,7 +40,12 @@ public class BrokerServerHandlerThread extends Thread {
 				/* just echo in this example */
 				if(packetFromClient.type == BrokerPacket.BROKER_REQUEST) {		
 					packetToClient.symbol = packetFromClient.symbol;
-					packetToClient.quote = Long.parseLong(brokerMap.get(packetToClient.symbol));
+					System.out.println(brokerMap.get(packetToClient.symbol));
+					
+					if(brokerMap.get(packetToClient.symbol) == null)
+						packetToClient.quote = Long.parseLong("0");
+					else
+						packetToClient.quote = Long.parseLong(brokerMap.get(packetToClient.symbol));
 					
 					//System.out.println("From Client: " + packetFromClient.message);
 				
@@ -53,9 +58,12 @@ public class BrokerServerHandlerThread extends Thread {
 				
 				/* Sending an ECHO_NULL || ECHO_BYE means quit */
 				if (packetFromClient.type == BrokerPacket.BROKER_NULL || packetFromClient.type == BrokerPacket.BROKER_BYE) {
+					System.out.println("I'm Here!");
 					gotByePacket = true;
 					packetToClient = new BrokerPacket();
 					packetToClient.type = BrokerPacket.BROKER_BYE;
+					packetToClient.symbol = "Bye!";
+					packetToClient.quote = Long.parseLong("873");
 					toClient.writeObject(packetToClient);
 					break;
 				}
@@ -66,6 +74,7 @@ public class BrokerServerHandlerThread extends Thread {
 			}
 			
 			/* cleanup when client exits */
+			System.out.println("I'm Here again!");
 			fromClient.close();
 			toClient.close();
 			socket.close();

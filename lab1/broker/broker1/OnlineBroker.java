@@ -52,15 +52,14 @@ public class OnlineBroker implements Serializable {
 			String[] elements = input.split(" ");
 			String symbol = elements[0];
 			String price = elements[1];
-			System.out.println(price);
+			//System.out.println(price);
 			brokerMap.put(symbol, price);
 		}
-		
+		printBrokerMap();
 		while (listening) {
 			new BrokerServerHandlerThread(serverSocket.accept(), brokerMap).start();
+			listening = false;
 		}
-		
-		//printBrokerMap();
 		
 		serverSocket.close();
 		

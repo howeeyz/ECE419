@@ -38,10 +38,16 @@ public class BrokerClient {
 		String userInput;
 
 		System.out.print(">");
-		while ((userInput = stdIn.readLine()) != null
-				&& userInput.toLowerCase().indexOf("x") == -1) {
+		while ((userInput = stdIn.readLine()) != null) {
 			/* make a new request packet */
 			BrokerPacket packetToServer = new BrokerPacket();
+			if(userInput.equals("x")){
+				/* tell server that i'm quitting */
+				packetToServer.type = BrokerPacket.BROKER_BYE;
+				packetToServer.symbol = "Bye!";
+				out.writeObject(packetToServer);
+				break;
+			}
 			packetToServer.type = BrokerPacket.BROKER_REQUEST;
 			packetToServer.symbol = userInput;
 			out.writeObject(packetToServer);
@@ -53,21 +59,18 @@ public class BrokerClient {
 			if (packetFromServer.type == BrokerPacket.BROKER_QUOTE)
 				System.out.println("Quote from Broker: " + packetFromServer.quote);
 
-
-
 			/* re-print console prompt */
 			System.out.print(">");
 		}
-
-		/* tell server that i'm quitting */
-		BrokerPacket packetToServer = new BrokerPacket();
-		packetToServer.type = BrokerPacket.BROKER_BYE;
-		packetToServer.symbol = "Bye!";
-		out.writeObject(packetToServer);
-
-		out.close();
-		in.close();
-		stdIn.close();
-		echoSocket.close();
+		
+		/* print server reply */
+		BrokerPacket packetFromServer;
+		packetFromServer = (BrokerPacket) in.readObject();
+		if (packetFromServer.type == BrokerPacket.BROKER_BYE){
+			out.close();
+			in.close();
+			stdIn.close();
+			echoSocket.close();
+		}
 	}
 }
