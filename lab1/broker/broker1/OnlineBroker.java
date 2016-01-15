@@ -52,7 +52,7 @@ public class OnlineBroker implements Serializable {
 			return brokerMap.get(symbol);
 		}
 		
-		return 0;
+		return "0";
 	}
 	
 	public static void printBrokerMap(){
