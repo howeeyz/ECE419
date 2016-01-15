@@ -1,6 +1,5 @@
-import java.io.Serializable;
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.net.*;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
@@ -15,8 +14,23 @@ public class OnlineBroker implements Serializable {
 	private static Map<String, String> brokerMap = new HashMap<String, String>();
 	
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException{
 
+		ServerSocket serverSocket = null;
+        boolean listening = true;
+		
+        try {
+        	if(args.length == 1) {
+        		serverSocket = new ServerSocket(Integer.parseInt(args[0]));
+        	} else {
+        		System.err.println("ERROR: Invalid arguments!");
+        		System.exit(-1);
+        	}
+        } catch (IOException e) {
+            System.err.println("ERROR: Could not listen on port!");
+            System.exit(-1);
+        }
+        
 		List<String> records = new ArrayList<String>();
 		
 		try {
@@ -42,7 +56,13 @@ public class OnlineBroker implements Serializable {
 			brokerMap.put(symbol, price);
 		}
 		
-		printBrokerMap();
+		while (listening) {
+			new BrokerServerHandlerThread(serverSocket.accept(), brokerMap).start();
+		}
+		
+		//printBrokerMap();
+		
+		serverSocket.close();
 		
 	}
 	
@@ -52,7 +72,7 @@ public class OnlineBroker implements Serializable {
 			return brokerMap.get(symbol);
 		}
 		
-		return 0;
+		return "0";
 	}
 	
 	public static void printBrokerMap(){
