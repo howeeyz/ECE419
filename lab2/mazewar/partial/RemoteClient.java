@@ -23,7 +23,7 @@ USA.
  * @version $Id: RemoteClient.java 342 2004-01-23 21:35:52Z geoffw $
  */
 
-public class RemoteClient extends Client {
+public class RemoteClient extends Client{
         
         /**
          * Create a remotely controlled {@link Client}.
@@ -32,7 +32,7 @@ public class RemoteClient extends Client {
         public RemoteClient(String name) {
                 super(name);
         }
-
+        
         /**
          * May want to fill in code here.
          */ 

@@ -1,16 +1,22 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Hashtable;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ClientListenerThread implements Runnable {
 
     private MSocket mSocket  =  null;
     private Hashtable<String, Client> clientTable = null;
+    private BlockingQueue mEventQueue = null;
 
     public ClientListenerThread( MSocket mSocket,
-                                Hashtable<String, Client> clientTable){
+                                Hashtable<String, Client> clientTable,
+                                BlockingQueue eventQueue
+                                ){
         this.mSocket = mSocket;
         this.clientTable = clientTable;
+        this.mEventQueue = eventQueue;
         if(Debug.debug) System.out.println("Instatiating ClientListenerThread");
     }
 
@@ -22,23 +28,13 @@ public class ClientListenerThread implements Runnable {
             try{
                 received = (MPacket) mSocket.readObject();
                 System.out.println("Received " + received);
-                client = clientTable.get(received.name);
-                if(received.event == MPacket.UP){
-                    client.forward();
-                }else if(received.event == MPacket.DOWN){
-                    client.backup();
-                }else if(received.event == MPacket.LEFT){
-                    client.turnLeft();
-                }else if(received.event == MPacket.RIGHT){
-                    client.turnRight();
-                }else if(received.event == MPacket.FIRE){
-                    client.fire();
-                }else{
-                    throw new UnsupportedOperationException();
-                }    
+                
+                mEventQueue.put(received);  
             }catch(IOException e){
                 Thread.currentThread().interrupt();    
             }catch(ClassNotFoundException e){
+                e.printStackTrace();
+            }catch(InterruptedException e){
                 e.printStackTrace();
             }            
         }

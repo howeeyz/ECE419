@@ -282,7 +282,9 @@ public class Mazewar extends JFrame {
                 //Start a new sender thread 
                 new Thread(new ClientSenderThread(mSocket, eventQueue)).start();
                 //Start a new listener thread 
-                new Thread(new ClientListenerThread(mSocket, clientTable)).start();    
+                new Thread(new ClientListenerThread(mSocket, clientTable, eventQueue)).start();
+                //Start a new receiver thread 
+                new Thread(new ClientReceiverThread(clientTable, eventQueue)).start();
         }
 
         
