@@ -1,7 +1,10 @@
 import java.net.Socket;
+import java.io.StreamCorruptedException;
+import java.io.OptionalDataException;
 import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.EOFException;
 import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Executors;
@@ -27,7 +30,7 @@ public class MSocket{
     //This should be a value between [0, inf), with 
     // 1000 being a good value
     //To disable delays, set to 0.0
-    public final double DELAY_WEIGHT = 1000.0;
+    public final double DELAY_WEIGHT = 100.0;
     
     //This roughly corresponds to the likelihood 
     //of any delay. This should be a value between (-inf, inf)
@@ -43,7 +46,7 @@ public class MSocket{
     //To disable all network errors set:
     //DELAY_WEIGHT = 0, DELAY_THRESHOLD = 0, UNORDER_FACTOR = 0
     //To induced a large degree of network errors set:
-    //DELAY_WEIGHT = 10000, DELAY_THRESHOLD = 0,UNORDER_FACTOR = 1
+    //DELAY_WEIGHT = 100, DELAY_THRESHOLD = 0,UNORDER_FACTOR = 1
 
     /*************Member objects for communication*************/
     private Socket socket = null;
@@ -85,6 +88,15 @@ public class MSocket{
                     ingressQueue.put(incoming);
                     incoming = in.readObject();
                 }
+            }catch(StreamCorruptedException e){
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+            }catch(OptionalDataException e){
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+            }catch(EOFException e){
+                e.printStackTrace();
+                close();
             }catch(IOException e){
                 e.printStackTrace();
             }catch(ClassNotFoundException e){
@@ -94,8 +106,7 @@ public class MSocket{
             }
         }
      }
-
-  
+    
     /*
      *The following inner class sends packets by reordering them 
      and adding a delay. 
@@ -138,11 +149,17 @@ public class MSocket{
                 //Now send all the events
                 while(events.size() > 0){
                     if(Debug.debug) System.out.println("Number of packets sent: " + ++sentCount);
-                    out.writeObject(events.remove(0));
+                    //Need to synchronize on the ObjectOutputStream instance; otherwise
+                    //multiple writes may corrupt stream and/or packets
+                    synchronized(out) {
+                        out.writeObject(events.remove(0));
+                        out.flush();
+                        out.reset();
+                    }
                 }
 
             }catch(InterruptedException e){
-                System.out.println("ERROR: Thread was interrupted!");
+                e.printStackTrace();
             }catch(IOException e){
                 e.printStackTrace();
             }
@@ -160,8 +177,8 @@ public class MSocket{
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
         
-        egressQueue = new LinkedBlockingQueue();
-        ingressQueue = new LinkedBlockingQueue();
+        egressQueue = new LinkedBlockingQueue<Object>();
+        ingressQueue = new LinkedBlockingQueue<Object>();
         random = new Random(/*seed*/);
         
         //Start the receiver thread
@@ -178,11 +195,12 @@ public class MSocket{
     //NOTE: This constructor is for internal use only
     public MSocket(Socket soc) throws IOException{
         socket = soc;
+
         out = new ObjectOutputStream(socket.getOutputStream());
         in = new ObjectInputStream(socket.getInputStream());
         
-        egressQueue = new LinkedBlockingQueue();
-        ingressQueue = new LinkedBlockingQueue();
+        egressQueue = new LinkedBlockingQueue<Object>();
+        ingressQueue = new LinkedBlockingQueue<Object>();
         random = new Random(/*seed*/);
         
         (new Thread(new Receiver())).start();
@@ -248,10 +266,11 @@ public class MSocket{
                     ingressQueue.put(events.remove(0));
             }
         }catch(InterruptedException e){
-            System.out.println("ERROR: Thread was interrupted!");
+            e.printStackTrace();
         }
         return incoming;
     }
+
 
     //Writes the object, while adding delay and unordering the packets
     public void writeObject(Object o) {
@@ -259,7 +278,7 @@ public class MSocket{
             //Place packet in the queue, and later change the order of packets sent
             egressQueue.put(o);
         }catch(InterruptedException e){
-            System.out.println("ERROR: Thread was interrupted!");
+            e.printStackTrace();
         }
         
         executor.submit(new NetworkErrorSender());
@@ -292,10 +311,13 @@ public class MSocket{
 
     //Closes network objects, i.e. sockets, InputObjectStreams, 
     // OutputObjectStream
-    public void close() throws IOException{
-        in.close();
-        out.close();
-        socket.close();
+    public void close() {
+        try{
+            in.close();
+            out.close();
+            socket.close();
+         }catch(IOException e){
+         }
     }
 
 }
