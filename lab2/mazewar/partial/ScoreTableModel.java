@@ -197,7 +197,7 @@ public class ScoreTableModel implements TableModel, MazeListener {
                 notifyListeners();
         } 
         
-        public void clientFired(Client client) {
+        public synchronized void clientFired(Client client) {
                 assert(client != null);
                 Object o = clientMap.get(client);
                 assert(o instanceof ScoreWrapper);
@@ -208,7 +208,7 @@ public class ScoreTableModel implements TableModel, MazeListener {
                 notifyListeners();
         }
         
-        public void clientKilled(Client source, Client target) {
+        public synchronized void clientKilled(Client source, Client target) {
                 assert(source != null);
                 assert(target != null);
                 Object o = clientMap.get(source);
