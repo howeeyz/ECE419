@@ -1,4 +1,5 @@
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.Hashtable;
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -12,11 +13,11 @@ import java.util.Hashtable;
  */
 public class ClientReceiverThread implements Runnable {
     private Hashtable<String, Client> mClientTable = null;
-    private BlockingQueue mEventQueue = null;
+    private PriorityBlockingQueue mEventQueue = null;
     private Client mClient = null;
     
     public ClientReceiverThread(Hashtable<String, Client> clientTable,
-                                BlockingQueue eventQueue){
+                                PriorityBlockingQueue eventQueue){
         
         this.mClientTable = clientTable;
         this.mEventQueue = eventQueue;
@@ -28,6 +29,7 @@ public class ClientReceiverThread implements Runnable {
         while(true){
             try{
                 MPacket received = (MPacket)mEventQueue.take();
+                System.out.println(received.sequenceNumber);
                 mClient = mClientTable.get(received.name);
                 if(received.event == MPacket.UP){
                     mClient.forward();

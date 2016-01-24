@@ -3,6 +3,7 @@ import java.io.ObjectInputStream;
 import java.util.Hashtable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class ClientListenerThread implements Runnable {
 
@@ -12,7 +13,7 @@ public class ClientListenerThread implements Runnable {
 
     public ClientListenerThread( MSocket mSocket,
                                 Hashtable<String, Client> clientTable,
-                                BlockingQueue eventQueue
+                                PriorityBlockingQueue eventQueue
                                 ){
         this.mSocket = mSocket;
         this.clientTable = clientTable;

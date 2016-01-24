@@ -34,6 +34,8 @@ import java.net.Socket;
 import java.util.Hashtable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
+
 
 /**
  * The entry point and glue code for the game.  It also contains some helpful
@@ -89,6 +91,8 @@ public class Mazewar extends JFrame {
          * A queue of events.
          */
         private BlockingQueue eventQueue = null;
+        
+        private PriorityBlockingQueue pEventQueue = null;
         
         /**
          * The panel that displays the {@link Maze}.
@@ -183,6 +187,8 @@ public class Mazewar extends JFrame {
                 eventQueue = new LinkedBlockingQueue<MPacket>();
                 //Initialize hash table of clients to client name 
                 clientTable = new Hashtable<String, Client>(); 
+                
+                pEventQueue = new PriorityBlockingQueue<MPacket>();
                 
                 // Create the GUIClient and connect it to the KeyListener queue
                 //RemoteClient remoteClient = null;
@@ -282,9 +288,9 @@ public class Mazewar extends JFrame {
                 //Start a new sender thread 
                 new Thread(new ClientSenderThread(mSocket, eventQueue)).start();
                 //Start a new listener thread 
-                new Thread(new ClientListenerThread(mSocket, clientTable, eventQueue)).start();
+                new Thread(new ClientListenerThread(mSocket, clientTable, pEventQueue)).start();
                 //Start a new receiver thread 
-                new Thread(new ClientReceiverThread(clientTable, eventQueue)).start();
+                new Thread(new ClientReceiverThread(clientTable, pEventQueue)).start();
         }
 
         
