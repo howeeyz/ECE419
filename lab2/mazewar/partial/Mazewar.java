@@ -188,7 +188,7 @@ public class Mazewar extends JFrame {
                 //Initialize hash table of clients to client name 
                 clientTable = new Hashtable<String, Client>(); 
                 
-                pEventQueue = new PriorityBlockingQueue<MPacket>();
+                pEventQueue = new PriorityBlockingQueue<MPacket>(20, new EventComparator());
                 
                 // Create the GUIClient and connect it to the KeyListener queue
                 //RemoteClient remoteClient = null;
