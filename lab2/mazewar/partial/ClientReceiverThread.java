@@ -31,7 +31,7 @@ public class ClientReceiverThread implements Runnable {
         while(true){
             try{
                 MPacket received = (MPacket)mEventQueue.peek();
-                if(received.sequenceNumber != this.mExpectedSequenceNum){
+                if(received == null || received.sequenceNumber != this.mExpectedSequenceNum){
                     continue;
                 }
                 this.mExpectedSequenceNum++;
