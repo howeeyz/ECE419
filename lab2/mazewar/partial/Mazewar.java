@@ -188,6 +188,7 @@ public class Mazewar extends JFrame {
                 //Initialize hash table of clients to client name 
                 clientTable = new Hashtable<String, Client>(); 
                 
+                //Event Comparator is used to order the queue based on smallest sequence number
                 pEventQueue = new PriorityBlockingQueue<MPacket>(20, new EventComparator());
                 
                 // Create the GUIClient and connect it to the KeyListener queue

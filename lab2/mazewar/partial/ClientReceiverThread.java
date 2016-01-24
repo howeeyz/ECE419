@@ -30,7 +30,12 @@ public class ClientReceiverThread implements Runnable {
     public void run(){
         while(true){
             try{
-                MPacket received = (MPacket)mEventQueue.take();
+                MPacket received = (MPacket)mEventQueue.peek();
+                if(received.sequenceNumber != this.mExpectedSequenceNum){
+                    continue;
+                }
+                this.mExpectedSequenceNum++;
+                mEventQueue.take();
                 System.out.println(received.sequenceNumber);
                 mClient = mClientTable.get(received.name);
                 if(received.event == MPacket.UP){
