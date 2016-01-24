@@ -53,6 +53,7 @@ public class Direction {
         private Direction(int direction) {
                 assert((direction >= 0) && (direction < 4));
                 this.direction = direction;
+                randomGen.setSeed(1);
         }
         
         /**
