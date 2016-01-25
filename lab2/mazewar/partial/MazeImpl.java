@@ -613,6 +613,10 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
          * play.
          */
         private final Set clientFired = new HashSet();
+        
+        public Set getClientFired(){
+            return clientFired;
+        }
        
         /**
          * The thread used to manage {@link Projectile}s.
