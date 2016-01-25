@@ -198,6 +198,7 @@ public class Mazewar extends JFrame {
                         	if(Debug.debug)System.out.println("Adding guiClient: " + player);
                                 guiClient = new GUIClient(name, eventQueue);
                                 maze.addClientAt(guiClient, player.point, player.direction);
+                                maze.setLocalClient(guiClient);
                                 this.addKeyListener(guiClient);
                                 clientTable.put(player.name, guiClient);
                         }else{
@@ -291,7 +292,7 @@ public class Mazewar extends JFrame {
                 //Start a new listener thread 
                 new Thread(new ClientListenerThread(mSocket, clientTable, pEventQueue)).start();
                 //Start a new receiver thread 
-                new Thread(new ClientReceiverThread(clientTable, pEventQueue)).start();
+                new Thread(new ClientReceiverThread(clientTable, pEventQueue, (MazeImpl)maze)).start();
         }
 
         
