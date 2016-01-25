@@ -198,7 +198,7 @@ public class Mazewar extends JFrame {
                         	if(Debug.debug)System.out.println("Adding guiClient: " + player);
                                 guiClient = new GUIClient(name, eventQueue);
                                 maze.addClientAt(guiClient, player.point, player.direction);
-                                maze.setLocalClient(guiClient);
+                                ((MazeImpl)maze).setLocalClient(guiClient);
                                 this.addKeyListener(guiClient);
                                 clientTable.put(player.name, guiClient);
                         }else{

@@ -51,6 +51,12 @@ public class ClientReceiverThread implements Runnable {
                     mClient.turnRight();
                 }else if(received.event == MPacket.FIRE){
                     mClient.fire();
+                }else if(received.event == MPacket.MISS){
+                    mMaze.missHandler(received.prj1);
+                }else if(received.event == MPacket.HIT){
+                    mMaze.hitHandler(received.prj1, received.source, received.target);
+                }else if(received.event == MPacket.COLLISION){
+                    mMaze.collisionHandler(received.prj1, received.prj2);
                 }else{
                     throw new UnsupportedOperationException();
                 }  

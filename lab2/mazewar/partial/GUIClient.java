@@ -76,6 +76,35 @@ public class GUIClient extends LocalClient implements KeyListener {
                 }
         }
         
+        public void sendProjHit(int action, Projectile prj, Client source, Client target){
+            try{
+                eventQueue.put(new MPacket(MPacket.ACTION, MPacket.HIT, source, target, prj));
+            }catch(InterruptedException ie){
+                //An exception is caught, do something
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        public void sendProjMiss(int action, Projectile prj){
+            //int type, int event, Projectile prj
+            try{
+                eventQueue.put(new MPacket(MPacket.ACTION, MPacket.MISS, prj));
+            }catch(InterruptedException ie){
+                //An exception is caught, do something
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        public void sendProjCollision(int action, Projectile prj1, Projectile prj2){
+            //int type, int event, Projectile prj1, Projectile prj2
+            try{
+                eventQueue.put(new MPacket(MPacket.ACTION, MPacket.COLLISION, prj1, prj2));
+            }catch(InterruptedException ie){
+                //An exception is caught, do something
+                Thread.currentThread().interrupt();
+            }
+        }
+        
         /**
          * Handle a key release. Not needed by {@link GUIClient}.
          * @param e The {@link KeyEvent} that occurred.

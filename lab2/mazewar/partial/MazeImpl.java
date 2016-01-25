@@ -50,6 +50,8 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
          * size of the maze.
          * @param seed Initial seed for the random number generator.
          */
+        
+        
         public MazeImpl(Point point, long seed) {
                 maxX = point.getX();
                 assert(maxX > 0);
@@ -78,7 +80,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
 
                 thread.start();
         }
-       
+        
         /** 
          * Create a maze from a serialized {@link MazeImpl} object written to a file.
          * @param mazefile The filename to load the serialized object from.
@@ -409,7 +411,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 if(cell.isWall(d)) {
                         // If there is a wall, the projectile goes away.
                         if(prj.getOwner().equals(this.mLocalClient)){
-                            client.sendProjAction(MPacket.MISS);
+                            client.sendProjMiss(MPacket.MISS, prj);
                         }
 //                        cell.setContents(null);
 //                        deadPrj.add(prj);
@@ -432,7 +434,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
 //                                    deadPrj.add(prj);
 //                                    update();
 //                                    return deadPrj;
-                                    client.sendProjAction(MPacket.HIT);
+                                    client.sendProjHit(MPacket.HIT, prj, this.mLocalClient, (Client)contents);
                                 }
                         } else {
                         // Bullets destroy each other
@@ -444,7 +446,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
 //                                deadPrj.add(contents);
 //                                update();
 //                                return deadPrj;
-                                    client.sendProjAction(MPacket.COLLISION);
+                                    client.sendProjCollision(MPacket.COLLISION, prj, (Projectile)contents);
                                 }
                         }
                 }
@@ -458,7 +460,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 return deadPrj;
         }
         
-        private synchronized void missHandler(Projectile prj) {
+        public synchronized void missHandler(Projectile prj) {
         
             Collection deadPrj = new LinkedList();
             assert(prj != null);
@@ -487,7 +489,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
             
         }
         
-        private synchronized void hitHandler(Projectile prj, Client source, Client victim) {
+        public synchronized void hitHandler(Projectile prj, Client source, Client victim) {
         
             Collection deadPrj = new LinkedList();
             assert(prj != null);
@@ -522,7 +524,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
             
         }
         
-        private synchronized void collisionHandler(Projectile prj1, Projectile prj2) {
+        public synchronized void collisionHandler(Projectile prj1, Projectile prj2) {
         
             Collection deadPrj = new LinkedList();
             assert(prj1 != null);

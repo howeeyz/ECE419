@@ -32,6 +32,9 @@ public class MPacket implements Serializable {
     public Client source;
     public Client target;
     
+    public Projectile prj1;
+    public Projectile prj2;
+    
     //The sequence number of the event
     public int sequenceNumber;
 
@@ -50,6 +53,31 @@ public class MPacket implements Serializable {
         this.name = name;
         this.type = type;
         this.event = event;
+    }
+    
+    //Constructor for a hit
+    public MPacket(int type, int event, Client source, Client target, Projectile prj){
+        this.type = type;
+        this.event = event;
+        this.source = source;
+        this.target = target;
+        this.prj1 = prj;
+    }
+    
+    //Constructor for a miss
+    public MPacket(int type, int event, Projectile prj){
+        this.type = type;
+        this.event = event;
+        this.prj1 = prj;
+
+    }
+    
+    //Constructor for a collision
+    public MPacket(int type, int event, Projectile prj1, Projectile prj2){
+        this.type = type;
+        this.event = event;
+        this.prj1 = prj1;
+        this.prj2 = prj2;
     }
     
     public String toString(){
