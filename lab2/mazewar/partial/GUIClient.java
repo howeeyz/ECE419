@@ -69,11 +69,20 @@ public class GUIClient extends LocalClient implements KeyListener {
                         } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
                             //fire();
                                 eventQueue.put(new MPacket(getName(), MPacket.ACTION, MPacket.FIRE));
-                        }
+                        } 
                 }catch(InterruptedException ie){
                         //An exception is caught, do something
                         Thread.currentThread().interrupt();
                 }
+        }
+        
+        public void sendProjHit(int action, Projectile prj, Client target){
+            try{
+                eventQueue.put(new MPacket(target.getName(), MPacket.ACTION, MPacket.HIT, prj.getOwner().getName()));
+            }catch(InterruptedException ie){
+                //An exception is caught, do something
+                Thread.currentThread().interrupt();
+            }
         }
         
         /**

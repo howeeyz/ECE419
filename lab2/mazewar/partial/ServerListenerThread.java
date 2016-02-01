@@ -17,7 +17,7 @@ public class ServerListenerThread implements Runnable {
         while(true){
             try{
                 received = (MPacket) mSocket.readObject();
-                if(Debug.debug) System.out.println("Received: " + received);
+                System.out.println("Received: " + received);
                 eventQueue.put(received);    
             }catch(InterruptedException e){
                 Thread.currentThread().interrupt();    

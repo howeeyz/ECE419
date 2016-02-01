@@ -19,6 +19,7 @@ public class MPacket implements Serializable {
     public static final int LEFT = 203;
     public static final int RIGHT = 204;
     public static final int FIRE = 205;
+    public static final int HIT = 206;
     
     //These fields characterize the event  
     public int type;
@@ -26,6 +27,9 @@ public class MPacket implements Serializable {
 
     //The name determines the client that initiated the event
     public String name;
+    
+    //The name of the owner of the projctile
+    public String prjName;
     
     //The sequence number of the event
     public int sequenceNumber;
@@ -45,6 +49,14 @@ public class MPacket implements Serializable {
         this.name = name;
         this.type = type;
         this.event = event;
+    }
+    
+    //constructor for hit
+    public MPacket(String name, int type, int event, String prjName){
+        this.name = name;
+        this.type = type;
+        this.event = event;
+        this.prjName = prjName;
     }
     
     public String toString(){
@@ -83,6 +95,9 @@ public class MPacket implements Serializable {
                 break;
             case 205:
                 eventStr = "FIRE";
+                break;
+            case 206:
+                eventStr = "HIT";
                 break;
             default:
                 eventStr = "ERROR";

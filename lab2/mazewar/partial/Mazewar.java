@@ -61,7 +61,7 @@ public class Mazewar extends JFrame {
          * All implementations of the same protocol must use 
          * the same seed value, or your mazes will be different.
          */
-        private final int mazeSeed = 42;
+        private final int mazeSeed = 1;
 
         /**
          * The {@link Maze} that the game uses.
@@ -156,6 +156,9 @@ public class Mazewar extends JFrame {
                 
                 // Create the maze
                 maze = new MazeImpl(new Point(mazeWidth, mazeHeight), mazeSeed);
+                
+                MazeImpl mazeImpl = (MazeImpl)maze;
+                
                 assert(maze != null);
                 
                 // Have the ScoreTableModel listen to the maze to find
@@ -198,6 +201,7 @@ public class Mazewar extends JFrame {
                         	if(Debug.debug)System.out.println("Adding guiClient: " + player);
                                 guiClient = new GUIClient(name, eventQueue);
                                 maze.addClientAt(guiClient, player.point, player.direction);
+                                mazeImpl.setLocalClient(guiClient);
                                 this.addKeyListener(guiClient);
                                 clientTable.put(player.name, guiClient);
                         }else{
@@ -291,7 +295,7 @@ public class Mazewar extends JFrame {
                 //Start a new listener thread 
                 new Thread(new ClientListenerThread(mSocket, clientTable, pEventQueue)).start();
                 //Start a new receiver thread 
-                new Thread(new ClientReceiverThread(clientTable, pEventQueue)).start();
+                new Thread(new ClientReceiverThread(clientTable, pEventQueue, (MazeImpl)maze)).start();
         }
 
         

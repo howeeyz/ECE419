@@ -43,7 +43,9 @@ import java.util.HashMap;
  */
 
 public class MazeImpl extends Maze implements Serializable, ClientListener, Runnable {
-
+        
+        private Client mLocalClient = null;
+    
         /**
          * Create a {@link Maze}.
          * @param point Treat the {@link Point} as a magintude specifying the
@@ -177,6 +179,10 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 
         }
        
+        public void setLocalClient(Client localClient){
+            this.mLocalClient = localClient;
+        }
+        
         
         public boolean checkBounds(Point point) {
                 assert(point != null);
@@ -306,10 +312,20 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 
                 /* Write the new cell */
                 projectileMap.put(prj, newPoint);
+                clientProjectileMap.put(prj.getOwner().getName(), prj);
                 newCell.setContents(prj);
                 notifyClientFired(client);
                 update();
                 return true; 
+        }
+        
+        public synchronized Projectile getProjectileForClientName(String name){
+            if(clientProjectileMap.isEmpty()){
+                return null;
+            }
+            Projectile prj = (Projectile) clientProjectileMap.get(name);
+            clientProjectileMap.remove(name);
+            return prj;
         }
         
         public synchronized boolean moveClientForward(Client client) {
@@ -402,8 +418,13 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 Direction d = dp.getDirection();
                 CellImpl cell = getCellImpl(dp);
                 
+                GUIClient client = (GUIClient)this.mLocalClient;
+                
                 /* Check for a wall */
                 if(cell.isWall(d)) {
+                        if(cell.getContents() instanceof Client){
+                            return deadPrj;
+                        }
                         // If there is a wall, the projectile goes away.
                         cell.setContents(null);
                         deadPrj.add(prj);
@@ -420,11 +441,17 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 if(contents != null) {
                         // If it is a Client, kill it outright
                         if(contents instanceof Client) {
-                                killClient(prj.getOwner(), (Client)contents);
-                                cell.setContents(null);
-                                deadPrj.add(prj);
-                                update();
-                                return deadPrj;
+                            System.out.println("This is a client");
+                            System.out.println(this.mLocalClient);
+                            if(contents.equals(this.mLocalClient)){
+                                System.out.println("This is our local client");
+                                client.sendProjHit(MPacket.HIT, prj, this.mLocalClient);
+                                //killClient(prj.getOwner(), (Client)contents);
+                                //cell.setContents(null);
+                                //deadPrj.add(prj);
+                                //update();
+                                //return deadPrj;
+                            }
                         } else {
                         // Bullets destroy each other
                                 assert(contents instanceof Projectile);
@@ -445,6 +472,31 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 update();
                 return deadPrj;
         }
+        
+        public synchronized void hitHandler(Projectile prj, Client source, Client target){
+            //Collection deadPrj = new LinkedList();
+            assert(prj != null);
+
+            Object o = projectileMap.get(prj);
+            assert(o instanceof DirectedPoint);
+            DirectedPoint dp = (DirectedPoint)o;
+            //Direction d = dp.getDirection();
+            CellImpl cell = getCellImpl(dp);
+            
+            //DirectedPoint newPoint = new DirectedPoint(dp.move(d), d);
+            /* Is the point within the bounds of maze? */
+            //assert(checkBounds(newPoint));
+
+            //CellImpl newCell = getCellImpl(newPoint);
+            
+            killClient(source, target);
+            cell.setContents(null);
+            update();
+            projectileMap.remove(prj);
+            clientFired.remove(prj.getOwner());
+            return;
+        }
+        
         /**
          * Internal helper for adding a {@link Client} to the {@link Maze}.
          * @param client The {@link Client} to be added.
@@ -602,7 +654,13 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
          * in the notification queue.
          */
         private final Set listenerSet = new HashSet();
-
+        
+        /**
+         * Mapping from Client name to {@link Projectile}s.
+         * 
+         */
+        private final Map clientProjectileMap = new HashMap();
+        
         /**
          * Mapping from {@link Projectile}s to {@link DirectedPoint}s. 
          */
