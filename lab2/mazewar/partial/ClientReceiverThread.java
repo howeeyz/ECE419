@@ -52,19 +52,19 @@ public class ClientReceiverThread implements Runnable {
                 }else if(received.event == MPacket.FIRE){
                     mClient.fire();
                 }else if(received.event == MPacket.MISS){
-                    Projectile prj = mMaze.getProjectileForClientName(received.prj1.getOwner().getName());
+                    Projectile prj = mMaze.getProjectileForClientName(received.prj1Owner);
                     assert(prj != null);
                     mMaze.missHandler(prj);
                 }else if(received.event == MPacket.HIT){
-                    Client source = mClientTable.get(received.source.getName());
-                    Client target = mClientTable.get(received.target.getName());
+                    Client source = mClientTable.get(received.source);
+                    Client target = mClientTable.get(received.target);
                     
-                    Projectile prj = mMaze.getProjectileForClientName(received.prj1.getOwner().getName());
+                    Projectile prj = mMaze.getProjectileForClientName(received.prj1Owner);
                     assert(prj != null);
                     mMaze.hitHandler(prj, source, target);
                 }else if(received.event == MPacket.COLLISION){
-                    Projectile prj1 = mMaze.getProjectileForClientName(received.prj1.getOwner().getName());
-                    Projectile prj2 = mMaze.getProjectileForClientName(received.prj2.getOwner().getName());
+                    Projectile prj1 = mMaze.getProjectileForClientName(received.prj1Owner);
+                    Projectile prj2 = mMaze.getProjectileForClientName(received.prj2Owner);
                     assert(prj1 != null &&  prj2 != null);
                     mMaze.collisionHandler(prj1, prj2);
                 }else{

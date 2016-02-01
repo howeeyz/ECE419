@@ -29,11 +29,11 @@ public class MPacket implements Serializable {
 
     //The name determines the client that initiated the event
     public String name;
-    public Client source;
-    public Client target;
+    public String source;
+    public String target;
     
-    public Projectile prj1;
-    public Projectile prj2;
+    public String prj1Owner;
+    public String prj2Owner;
     
     //The sequence number of the event
     public int sequenceNumber;
@@ -56,28 +56,28 @@ public class MPacket implements Serializable {
     }
     
     //Constructor for a hit
-    public MPacket(int type, int event, Client source, Client target, Projectile prj){
+    public MPacket(int type, int event, String source, String target, String prjOwner){
         this.type = type;
         this.event = event;
         this.source = source;
         this.target = target;
-        this.prj1 = prj;
+        this.prj1Owner = prjOwner;
     }
     
     //Constructor for a miss
-    public MPacket(int type, int event, Projectile prj){
+    public MPacket(int type, int event, String prjOwner){
         this.type = type;
         this.event = event;
-        this.prj1 = prj;
+        this.prj1Owner = prjOwner;
 
     }
     
     //Constructor for a collision
-    public MPacket(int type, int event, Projectile prj1, Projectile prj2){
+    public MPacket(int type, int event, String prj1Owner, String prj2Owner){
         this.type = type;
         this.event = event;
-        this.prj1 = prj1;
-        this.prj2 = prj2;
+        this.prj1Owner = prj1Owner;
+        this.prj2Owner = prj2Owner;
     }
     
     public String toString(){
