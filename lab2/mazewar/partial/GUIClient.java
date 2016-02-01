@@ -78,7 +78,7 @@ public class GUIClient extends LocalClient implements KeyListener {
         
         public void sendProjHit(int action, Projectile prj, Client source, Client target){
             try{
-                eventQueue.put(new MPacket(MPacket.ACTION, MPacket.HIT, source.getName(), target.getName(), prj.getOwner().getName()));
+                eventQueue.put(new MPacket(getName(), MPacket.ACTION, MPacket.HIT, source.getName(), target.getName(), prj.getOwner().getName()));
             }catch(InterruptedException ie){
                 //An exception is caught, do something
                 Thread.currentThread().interrupt();
@@ -88,7 +88,7 @@ public class GUIClient extends LocalClient implements KeyListener {
         public void sendProjMiss(int action, Projectile prj){
             //int type, int event, Projectile prj
             try{
-                eventQueue.put(new MPacket(MPacket.ACTION, MPacket.MISS, prj.getOwner().getName()));
+                eventQueue.put(new MPacket(getName(),MPacket.ACTION, MPacket.MISS, prj.getOwner().getName()));
             }catch(InterruptedException ie){
                 //An exception is caught, do something
                 Thread.currentThread().interrupt();
@@ -98,7 +98,7 @@ public class GUIClient extends LocalClient implements KeyListener {
         public void sendProjCollision(int action, Projectile prj1, Projectile prj2){
             //int type, int event, Projectile prj1, Projectile prj2
             try{
-                eventQueue.put(new MPacket(MPacket.ACTION, MPacket.COLLISION, prj1.getOwner().getName(), prj2.getOwner().getName()));
+                eventQueue.put(new MPacket(getName(), MPacket.ACTION, MPacket.COLLISION, prj1.getOwner().getName(), prj2.getOwner().getName()));
             }catch(InterruptedException ie){
                 //An exception is caught, do something
                 Thread.currentThread().interrupt();

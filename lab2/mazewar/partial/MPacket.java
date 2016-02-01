@@ -56,7 +56,8 @@ public class MPacket implements Serializable {
     }
     
     //Constructor for a hit
-    public MPacket(int type, int event, String source, String target, String prjOwner){
+    public MPacket(String name, int type, int event, String source, String target, String prjOwner){
+        this.name = name;
         this.type = type;
         this.event = event;
         this.source = source;
@@ -65,7 +66,8 @@ public class MPacket implements Serializable {
     }
     
     //Constructor for a miss
-    public MPacket(int type, int event, String prjOwner){
+    public MPacket(String name, int type, int event, String prjOwner){
+        this.name = name;
         this.type = type;
         this.event = event;
         this.prj1Owner = prjOwner;
@@ -73,7 +75,8 @@ public class MPacket implements Serializable {
     }
     
     //Constructor for a collision
-    public MPacket(int type, int event, String prj1Owner, String prj2Owner){
+    public MPacket(String name, int type, int event, String prj1Owner, String prj2Owner){
+        this.name = name;
         this.type = type;
         this.event = event;
         this.prj1Owner = prj1Owner;
