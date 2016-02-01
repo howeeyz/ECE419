@@ -311,10 +311,20 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 
                 /* Write the new cell */
                 projectileMap.put(prj, newPoint);
+                clientProjectileMap.put(prj.getOwner().getName(), prj);
                 newCell.setContents(prj);
                 notifyClientFired(client);
                 update();
                 return true; 
+        }
+        
+        public synchronized Projectile getProjectileForClientName(String name){
+            if(clientProjectileMap.isEmpty()){
+                return null;
+            }
+            Projectile prj = (Projectile) clientProjectileMap.get(name);
+            clientProjectileMap.remove(name);
+            return prj;
         }
         
         public synchronized boolean moveClientForward(Client client) {
@@ -436,6 +446,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
 //                                    return deadPrj;
                                     client.sendProjHit(MPacket.HIT, prj, this.mLocalClient, (Client)contents);
                                 }
+                                
                         } else {
                         // Bullets destroy each other
                                 assert(contents instanceof Projectile);
@@ -722,6 +733,13 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
          * Mapping from {@link Projectile}s to {@link DirectedPoint}s. 
          */
         private final Map projectileMap = new HashMap();
+        
+        
+        /**
+         * Mapping from Client name to {@link Projectile}s.
+         * 
+         */
+        private final Map clientProjectileMap = new HashMap();
         
         /**
          * The set of {@link Client}s that have {@link Projectile}s in 

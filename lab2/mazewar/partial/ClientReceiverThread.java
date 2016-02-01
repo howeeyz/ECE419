@@ -52,11 +52,21 @@ public class ClientReceiverThread implements Runnable {
                 }else if(received.event == MPacket.FIRE){
                     mClient.fire();
                 }else if(received.event == MPacket.MISS){
-                    mMaze.missHandler(received.prj1);
+                    Projectile prj = mMaze.getProjectileForClientName(received.prj1.getOwner().getName());
+                    assert(prj != null);
+                    mMaze.missHandler(prj);
                 }else if(received.event == MPacket.HIT){
-                    mMaze.hitHandler(received.prj1, received.source, received.target);
+                    Client source = mClientTable.get(received.source.getName());
+                    Client target = mClientTable.get(received.target.getName());
+                    
+                    Projectile prj = mMaze.getProjectileForClientName(received.prj1.getOwner().getName());
+                    assert(prj != null);
+                    mMaze.hitHandler(prj, source, target);
                 }else if(received.event == MPacket.COLLISION){
-                    mMaze.collisionHandler(received.prj1, received.prj2);
+                    Projectile prj1 = mMaze.getProjectileForClientName(received.prj1.getOwner().getName());
+                    Projectile prj2 = mMaze.getProjectileForClientName(received.prj2.getOwner().getName());
+                    assert(prj1 != null &&  prj2 != null);
+                    mMaze.collisionHandler(prj1, prj2);
                 }else{
                     throw new UnsupportedOperationException();
                 }  
