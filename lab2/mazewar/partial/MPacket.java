@@ -45,7 +45,7 @@ public class MPacket implements Serializable {
         this.name = name;
         this.type = type;
         this.event = event;
-    }
+    }    
     
     public String toString(){
         String typeStr;

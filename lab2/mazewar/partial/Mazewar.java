@@ -61,7 +61,7 @@ public class Mazewar extends JFrame {
          * All implementations of the same protocol must use 
          * the same seed value, or your mazes will be different.
          */
-        private final int mazeSeed = 42;
+        private final int mazeSeed = 0;
 
         /**
          * The {@link Maze} that the game uses.

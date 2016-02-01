@@ -1,19 +1,29 @@
 import java.io.InvalidObjectException;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.Random;
 
 public class ServerSenderThread implements Runnable {
 
     //private ObjectOutputStream[] outputStreamList = null;
     private MSocket[] mSocketList = null;
-    private BlockingQueue eventQueue = null;
+    private BlockingQueue clientQueue = null;
+    private Map clientPriorityMap = null;
+    private Map expectedSequenceMap = null;
     private int globalSequenceNumber; 
     
+    private String currentClient = null;
+    
     public ServerSenderThread(MSocket[] mSocketList,
-                              BlockingQueue eventQueue){
+                              BlockingQueue clientQueue,
+                              Map clientPriorityMap,
+                              Map expectedSequenceMap){
         this.mSocketList = mSocketList;
-        this.eventQueue = eventQueue;
+        this.clientQueue = clientQueue;
+        this.clientPriorityMap = clientPriorityMap;
+        this.expectedSequenceMap = expectedSequenceMap;
         this.globalSequenceNumber = 0;
     }
 
@@ -31,7 +41,11 @@ public class ServerSenderThread implements Runnable {
         MPacket hello = null;
         try{        
             for(int i=0; i<playerCount; i++){
-                hello = (MPacket)eventQueue.take();
+                while(clientQueue.isEmpty()){
+                    
+                }
+                PriorityBlockingQueue pQueue =  (PriorityBlockingQueue)clientPriorityMap.get(clientQueue.take());  
+                hello = (MPacket) pQueue.take();
                 //Sanity check 
                 if(hello.type != MPacket.HELLO){
                     throw new InvalidObjectException("Expecting HELLO Packet");
@@ -72,15 +86,46 @@ public class ServerSenderThread implements Runnable {
         
         while(true){
             try{
-                //Take packet from queue to broadcast
-                //to all clients
-                toBroadcast = (MPacket)eventQueue.take();
-                //Tag packet with sequence number and increment sequence number
-                toBroadcast.sequenceNumber = this.globalSequenceNumber++;
-                if(Debug.debug) System.out.println("Sending " + toBroadcast);
-                //Send it to all clients
-                for(MSocket mSocket: mSocketList){
-                    mSocket.writeObject(toBroadcast);
+                //Take next client from clientQueue
+                if(currentClient == null){
+                    if(clientQueue.isEmpty()){
+                        continue;
+                    }
+                    currentClient = (String) clientQueue.take();
+                }
+                
+                Integer expected = (Integer)(expectedSequenceMap.get(currentClient));
+                
+                PriorityBlockingQueue pQueue = (PriorityBlockingQueue)clientPriorityMap.get(currentClient);
+                if(pQueue.isEmpty()){
+                    currentClient = null;
+                    continue;
+                }
+                MPacket packet = (MPacket)pQueue.peek();
+                
+                if(expected != packet.sequenceNumber){
+                    continue;
+                }
+                //Expected sequence number is equal.
+                
+                while(!pQueue.isEmpty()){
+                    MPacket p = (MPacket)pQueue.take();
+                    if(p.sequenceNumber != expected){
+                        break;
+                    }
+                    toBroadcast = p;
+                    //Tag packet with sequence number and increment sequence number
+                    toBroadcast.sequenceNumber = this.globalSequenceNumber++;
+                    if(Debug.debug) System.out.println("Sending " + toBroadcast);
+                    //Send it to all clients
+                    for(MSocket mSocket: mSocketList){
+                        mSocket.writeObject(toBroadcast);
+                    }
+                    
+                    expectedSequenceMap.put(currentClient, ++expected);
+                }
+                if(pQueue.isEmpty()){
+                    currentClient = null;
                 }
             }catch(InterruptedException e){
                 System.out.println("Throwing Interrupt");

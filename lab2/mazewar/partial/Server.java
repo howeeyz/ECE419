@@ -1,6 +1,9 @@
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class Server {
     
@@ -10,7 +13,9 @@ public class Server {
     private MServerSocket mServerSocket = null;
     private int clientCount; //The number of clients before game starts
     private MSocket[] mSocketList = null; //A list of MSockets
-    private BlockingQueue eventQueue = null; //A list of events
+    private BlockingQueue clientQueue = null; //A list of events
+    private Map clientPriorityMap = null;
+    private Map expectedSequenceMap = null;
     
     /*
     * Constructor
@@ -20,7 +25,9 @@ public class Server {
         mServerSocket = new MServerSocket(port);
         if(Debug.debug) System.out.println("Listening on port: " + port);
         mSocketList = new MSocket[MAX_CLIENTS];
-        eventQueue = new LinkedBlockingQueue<MPacket>();
+        clientQueue = new LinkedBlockingQueue<MPacket>();
+        clientPriorityMap = new HashMap();
+        expectedSequenceMap = new HashMap();
     }
     
     /*
@@ -32,7 +39,7 @@ public class Server {
             //Start a new listener thread for each new client connection
             MSocket mSocket = mServerSocket.accept();
             
-            new Thread(new ServerListenerThread(mSocket, eventQueue)).start();
+            new Thread(new ServerListenerThread(mSocket, clientQueue, clientPriorityMap, expectedSequenceMap)).start();
             
             mSocketList[clientCount] = mSocket;                            
             
@@ -40,7 +47,7 @@ public class Server {
         }
         
         //Start a new sender thread 
-        new Thread(new ServerSenderThread(mSocketList, eventQueue)).start();    
+        new Thread(new ServerSenderThread(mSocketList, clientQueue, clientPriorityMap, expectedSequenceMap)).start();    
     }
 
         
