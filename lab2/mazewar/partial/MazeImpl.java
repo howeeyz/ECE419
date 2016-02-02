@@ -454,7 +454,21 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                         } else {
                         // Bullets destroy each other
                                 assert(contents instanceof Projectile);
-                                newCell.setContents(null);
+                                //We know contents is a projectile
+                                Object o2 = projectileMap.get(prj);
+                                assert(o2 instanceof DirectedPoint);
+                                DirectedPoint dp2 = (DirectedPoint)o;
+                                Direction d2 = dp2.getDirection();
+                                DirectedPoint newPoint2 = new DirectedPoint(dp2.move(d2), d2);
+                                CellImpl newcell2 = getCellImpl(newPoint2);
+                                System.out.println("Collision happened");
+                                
+                                if(newCell.getContents() instanceof Projectile){
+                                    newCell.setContents(null);
+                                }
+                                if(newcell2.getContents() instanceof Projectile){
+                                    newcell2.setContents(null);
+                                }
                                 cell.setContents(null);
                                 deadPrj.add(prj);
                                 deadPrj.add(contents);
