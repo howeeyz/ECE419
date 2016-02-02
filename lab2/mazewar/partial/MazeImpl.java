@@ -445,7 +445,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 if(contents != null) {
                         // If it is a Client, kill it outright
                         if(contents instanceof Client) {
-                            if(prj.getOwner().equals(this.mLocalClient)){
+                            if(prj.getOwner().getName().equals(this.mLocalClient.getName())){
                                 System.out.println("This is our local client");
                                 //Broadcast HIT to server IMPORTANTTT
                                 client.sendProjHit(MPacket.HIT, prj, (Client)contents);
