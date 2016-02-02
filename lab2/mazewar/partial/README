@@ -1,9 +1,10 @@
+# Aldrich Wingsiong, 998735775
+# Howard Zhang, 998851871
+
 Introduction
 ============
-This implements a client-server Mazewar game. 
-Additionally, the MSocket class can be used to 
-induce errors, such as adding delays and reordering packets.
-
+This implements a synchronized client-server Mazewar game. 
+Up to four players can join as a client with one machine running the server.
 
 Architecture
 ============
@@ -38,9 +39,13 @@ To make the project run
 make
 
 To run the server:
-</path/to/java/>java Server <listening port>
+./server.sh <server port> <num of players>
+
+Example: ./server.sh 9001 4
 
 To run the clients: 
-</path/to/java/>java Mazewar <server host> <server port>
+./run.sh <server host> <server port>
+
+Example: ./run.sh ug298 9001 //Ensure that the host is the ug number of the machine running server.
 
 
