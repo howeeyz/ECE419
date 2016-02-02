@@ -393,7 +393,9 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                                                 assert(o instanceof Projectile);
                                                 Projectile prj = (Projectile)o;
                                                 projectileMap.remove(prj);
-                                                clientFired.remove(prj.getOwner());
+                                                if(prj != null){
+                                                    clientFired.remove(prj.getOwner());
+                                                }     
                                         }
                                         deadPrj.clear();
                                 }
@@ -455,12 +457,6 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                         // Bullets destroy each other
                                 assert(contents instanceof Projectile);
                                 //We know contents is a projectile
-                                Object o2 = projectileMap.get(prj);
-                                assert(o2 instanceof DirectedPoint);
-                                DirectedPoint dp2 = (DirectedPoint)o;
-                                Direction d2 = dp2.getDirection();
-                                DirectedPoint newPoint2 = new DirectedPoint(dp2.move(d2), d2);
-                                CellImpl newcell2 = getCellImpl(newPoint2);
                                 System.out.println("Collision happened");
                                 
                                 if(newCell.getContents() instanceof Projectile){
@@ -470,12 +466,6 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                                     }
                                     
                                 }
-                                if(newcell2.getContents() instanceof Projectile){
-                                    newcell2.setContents(null);
-                                    if(!deadPrj.contains(newcell2.getContents())){
-                                        deadPrj.add(newcell2.getContents());
-                                    } 
-                                }
                                 cell.setContents(null);
                                 if(!deadPrj.contains(prj)){
                                     deadPrj.add(prj);
@@ -484,17 +474,24 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                                     deadPrj.add(contents);
                                 }
                                 update();
+                                System.out.println("Projectile destroyed");
                                 return deadPrj;
                         }
                 }
-
-                /* Clear the old cell */
-                cell.setContents(null);
-                /* Write the new cell */
-                projectileMap.put(prj, newPoint);
-                newCell.setContents(prj);
-                update();
+                if(projectileMap.containsKey(prj) && clientFired.contains(prj.getOwner())){
+                    System.out.println("Let's move projectile");
+                    /* Clear the old cell */
+                    cell.setContents(null);
+                    /* Write the new cell */
+                    projectileMap.put(prj, newPoint);
+                    newCell.setContents(prj);
+                    update();
+                }
+                else{
+                    deadPrj.add(prj);
+                }
                 return deadPrj;
+                
         }
         
         public synchronized void hitHandler(Projectile prj, Client source, Client target){
