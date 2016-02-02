@@ -461,11 +461,12 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                                 //We know contents is a projectile
                                 if(newCell.getContents() instanceof Projectile){
                                     newCell.setContents(null);
-                                    deadPrj.add(newCell.getContents());
+                                    deadPrj.add(contents);
                                 }
-                                cell.setContents(null);
-                                deadPrj.add(prj);
-                                deadPrj.add(contents);
+                                if(cell.getContents() instanceof Projectile){
+                                    cell.setContents(null);
+                                    deadPrj.add(prj);
+                                }
                                 update();
                                 return deadPrj;
                         }
