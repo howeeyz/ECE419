@@ -56,8 +56,8 @@ public class ClientReceiverThread implements Runnable {
                     Projectile prj = mMaze.getProjectileForClientName(received.prjName);
                     assert(prj != null);
                     
-                    Client source = mClientTable.get(received.prjName);
-                    Client target = mClientTable.get(received.name);
+                    Client source = mClientTable.get(received.name);
+                    Client target = mClientTable.get(received.prjName);
                     
                     mMaze.hitHandler(prj,source,target);
                     

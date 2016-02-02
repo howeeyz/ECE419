@@ -78,7 +78,7 @@ public class GUIClient extends LocalClient implements KeyListener {
         
         public void sendProjHit(int action, Projectile prj, Client target){
             try{
-                eventQueue.put(new MPacket(prj.getOwner().getName(), MPacket.ACTION, MPacket.HIT, target.getName() ));
+                eventQueue.put(new MPacket(prj.getOwner().getName(), MPacket.ACTION, MPacket.HIT, target.getName()));
             }catch(InterruptedException ie){
                 //An exception is caught, do something
                 Thread.currentThread().interrupt();
