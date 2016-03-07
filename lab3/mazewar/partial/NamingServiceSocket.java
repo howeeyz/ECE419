@@ -2,7 +2,7 @@ import java.net.Socket;
 import java.net.ServerSocket;
 import java.io.IOException;
 
-public class MServerSocket{
+public class NamingServiceSocket{
     /*
     * This is the serverSocket equivalent to 
     * MSocket
@@ -13,7 +13,7 @@ public class MServerSocket{
     /*
      *This creates a server socket
      */    
-    public MServerSocket(int port) throws IOException{
+    public NamingServiceSocket(int port) throws IOException{
         serverSocket = new ServerSocket(port);
     }
     

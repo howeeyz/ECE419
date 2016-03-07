@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -8,9 +9,11 @@ public class NamingService {
     
     //The maximum of clients that will join
     //Server waits until the max number of clients to join 
+    public static final String BROADCAST_STRING = "Broadcast";
+    public static final String NAMING_SERVICE_STRING = "Naming Service";
     private static final int MAX_CLIENTS = 2;
-    private static ArrayList<Client> clientList;
-    private MServerSocket mServerSocket = null;
+    private static ArrayList<Player> playerList;
+    private NamingServiceSocket mServerSocket = null;
     private int clientCount; //The number of clients before game starts
     private MSocket[] mSocketList = null; //A list of MSockets
     private BlockingQueue eventQueue = null; //A list of events
@@ -21,9 +24,9 @@ public class NamingService {
     * Constructor
     */
     public NamingService(int port) throws IOException{
-        clientList = new ArrayList();   //Array list of registered clients
+        playerList = new ArrayList();   //Array list of registered clients
         clientCount = 0; 
-        mServerSocket = new MServerSocket(port);
+        mServerSocket = new NamingServiceSocket(port);
         if(Debug.debug) System.out.println("Listening on port: " + port);
         mSocketList = new MSocket[MAX_CLIENTS];
         eventQueue = new LinkedBlockingQueue<MPacket>();
@@ -31,7 +34,7 @@ public class NamingService {
     
     //Get Player from naming service and send to client
     public Client getPlayer(String playerName){
-       Iterator it = clientList.iterator();
+       Iterator it = playerList.iterator();
        while(it.hasNext()){
            Client curr = (Client)it.next();
            if(curr.getName().equals(playerName))
@@ -41,14 +44,27 @@ public class NamingService {
     }
     
     //Add a new player to naming service
-    public Client addPlayer(String player){
-        if(getPlayer(player) != null)
+    public Player addPlayer(String playerName, int mazeSeed, int mazeWidth, int mazeHeight){
+        if(getPlayer(playerName) != null)
             return null;
         
-        Client newPlayer = new RemoteClient(player);
-        clientList.add(newPlayer);
+        Random randomGen = null;
+        
+        if(randomGen == null){
+            randomGen = new Random(mazeSeed); 
+        }
+        //Get a random location for player
+        Point point = new Point(randomGen.nextInt(mazeWidth),
+                          randomGen.nextInt(mazeHeight));
+        
+        Player newPlayer = new Player(playerName, point, Player.North);
+        playerList.add(newPlayer);
         clientCount++;
         return newPlayer;
+    }
+    
+    public ArrayList getPlayerList(){
+        return playerList;
     }
     
     /*
@@ -60,13 +76,15 @@ public class NamingService {
             //Start a new listener thread for each new client connection
             MSocket mSocket = mServerSocket.accept();
             
-            new Thread(new ServerListenerThread(mSocket, eventQueue)).start();
+            new Thread(new NamingServiceListenerThread(mSocket, eventQueue)).start();
             
             mSocketList[clientCount] = mSocket;  
         }
         
         //Start a new sender thread 
-        new Thread(new ServerSenderThread(mSocketList, eventQueue)).start();    
+        NamingServiceSenderThread nsst = new NamingServiceSenderThread(mSocketList, eventQueue);
+        nsst.mNamingService = this;
+        new Thread(nsst).start();    
     }
 
         

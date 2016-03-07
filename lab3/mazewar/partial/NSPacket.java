@@ -19,6 +19,10 @@ public class NSPacket implements Serializable{
     private String mReceiver;
     private String mPlayerName;
 
+    //These are used to initialize the board
+    public int mazeSeed;
+    public int mazeHeight;
+    public int mazeWidth; 
     private ArrayList<Player> mPlayers;
     
     
