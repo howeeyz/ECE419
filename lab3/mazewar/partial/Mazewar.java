@@ -190,13 +190,13 @@ public class Mazewar extends JFrame {
                         if(player.name.equals(name)){
                         	if(Debug.debug)System.out.println("Adding guiClient: " + player);
                                 guiClient = new GUIClient(name, eventQueue);
-                                maze.addClientAt(guiClient, player.point, player.direction);
+                                maze.addClient(guiClient);
                                 this.addKeyListener(guiClient);
                                 clientTable.put(player.name, guiClient);
                         }else{
                         	if(Debug.debug)System.out.println("Adding remoteClient: " + player);
                                 RemoteClient remoteClient = new RemoteClient(player.name);
-                                maze.addClientAt(remoteClient, player.point, player.direction);
+                                maze.addClient(remoteClient);
                                 clientTable.put(player.name, remoteClient);
                         }
                 }
