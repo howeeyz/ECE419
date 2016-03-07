@@ -57,13 +57,6 @@ public abstract class Maze {
      * @param client {@link Client} to be added to the {@link Maze}.
      */
     public abstract void addClient(Client client);
-    
-    /** 
-     * Add a {@link Client} at the specified location in the {@link Maze}. 
-     * @param client {@link Client} to be added to the {@link Maze}.
-     * @param point {@link Point} the location where client is added.
-     */    
-    public abstract void addClientAt(Client client, Point point, int direction);
 
     /** 
      * Create a new {@link Projectile} from the specified {@link Client}
@@ -109,6 +102,11 @@ public abstract class Maze {
      * @return {@link Iterator} over clients in the {@link Maze}. 
      */
     public abstract Iterator getClients();
+    
+    /**
+     * Move missiles
+     */
+    public abstract void missileTick();
     
     /* Maze Listeners ******************************************************/
 

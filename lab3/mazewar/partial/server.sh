@@ -5,5 +5,5 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-${JAVA_HOME}/bin/java Server $1 
+${JAVA_HOME}/bin/java NamingService $1 
 
