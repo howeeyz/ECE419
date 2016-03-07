@@ -11,7 +11,7 @@ public class NamingService {
     //Server waits until the max number of clients to join 
     public static final String BROADCAST_STRING = "Broadcast";
     public static final String NAMING_SERVICE_STRING = "Naming Service";
-    private static final int MAX_CLIENTS = 2;
+    private static final int MAX_CLIENTS = 1;
     private static ArrayList<Player> playerList;
     private NamingServiceSocket mNamingServiceSocket = null;
     private int clientCount; //The number of clients before game starts
@@ -59,7 +59,6 @@ public class NamingService {
         
         Player newPlayer = new Player(playerName, point, Player.North);
         playerList.add(newPlayer);
-        clientCount++;
         return newPlayer;
     }
     
@@ -79,14 +78,16 @@ public class NamingService {
             new Thread(new NamingServiceListenerThread(mSocket, eventQueue)).start();
             
             mSocketList[clientCount] = mSocket;  
+            
+            clientCount++;
         }
         
+        System.out.println("Starting NamingServiceSenderThread");
         //Start a new sender thread 
         NamingServiceSenderThread nsst = new NamingServiceSenderThread(mSocketList, eventQueue);
         nsst.mNamingService = this;
         new Thread(nsst).start();    
     }
-
         
     /*
     * Entry point for server

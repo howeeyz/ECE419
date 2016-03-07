@@ -34,7 +34,7 @@ public class NamingServiceSenderThread implements Runnable {
             for(int i=0; i<playerCount; i++){
                 hello = (MPacket)eventQueue.take();
                 //Sanity check 
-                if(hello.event != MPacket.HELLO){
+                if(hello.type != MPacket.HELLO){
                     throw new InvalidObjectException("Expecting a sequence packet. Not an acknowledgement");
                 }
             }
