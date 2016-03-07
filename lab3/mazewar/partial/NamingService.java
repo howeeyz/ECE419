@@ -13,7 +13,7 @@ public class NamingService {
     public static final String NAMING_SERVICE_STRING = "Naming Service";
     private static final int MAX_CLIENTS = 2;
     private static ArrayList<Player> playerList;
-    private NamingServiceSocket mServerSocket = null;
+    private NamingServiceSocket mNamingServiceSocket = null;
     private int clientCount; //The number of clients before game starts
     private MSocket[] mSocketList = null; //A list of MSockets
     private BlockingQueue eventQueue = null; //A list of events
@@ -26,7 +26,7 @@ public class NamingService {
     public NamingService(int port) throws IOException{
         playerList = new ArrayList();   //Array list of registered clients
         clientCount = 0; 
-        mServerSocket = new NamingServiceSocket(port);
+        mNamingServiceSocket = new NamingServiceSocket(port);
         if(Debug.debug) System.out.println("Listening on port: " + port);
         mSocketList = new MSocket[MAX_CLIENTS];
         eventQueue = new LinkedBlockingQueue<MPacket>();
@@ -74,7 +74,7 @@ public class NamingService {
         //Listen for new clients
         while(clientCount < MAX_CLIENTS){
             //Start a new listener thread for each new client connection
-            MSocket mSocket = mServerSocket.accept();
+            MSocket mSocket = mNamingServiceSocket.accept();
             
             new Thread(new NamingServiceListenerThread(mSocket, eventQueue)).start();
             
