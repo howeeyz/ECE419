@@ -97,6 +97,5 @@ public class NamingService {
         NamingService ns = new NamingService(port);
                 
         ns.startThreads();    
-
     }
 }

@@ -44,8 +44,12 @@ public class NamingServiceSenderThread implements Runnable {
             NSPacket toBroadcast = new NSPacket(NamingService.NAMING_SERVICE_STRING, NamingService.BROADCAST_STRING, mNamingService.getPlayerList());
             toBroadcast.setSeqNo(globalSequenceNumber++);
             
+            
             //Now broadcast the new packet
-            if(Debug.debug) System.out.println("Sending " + hello);
+            if(Debug.debug){
+                System.out.println("Sending " + toBroadcast);
+                System.out.println(toBroadcast.toStringServer());
+            }
             for(MSocket mSocket: mSocketList){
                 mSocket.writeObject(toBroadcast);   
             }
