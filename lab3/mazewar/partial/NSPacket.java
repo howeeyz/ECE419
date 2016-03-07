@@ -74,4 +74,23 @@ public class NSPacket implements Serializable{
         return mPlayers;
     }
 
+    public String toStringClient(){
+        String retString = String.format("NSPACKET(FROM: %s, TO: %s, Name: %s, SEQNO: %d)", mSender, mReceiver, mPlayerName, mSeqNo);
+        return retString;
+    }
+    
+    public String toStringServer(){
+        String retString = "NSPACKET(FROM: " + mSender + ", TO: " + mReceiver + ", Name: " + mPlayerName + ", SEQNO: " + mSeqNo + ")\n";
+        for(int i = 0; i < mPlayers.size(); i++){
+            retString = retString + "Name: " + mPlayers.get(i).name + ", " + "Coordinates: (" + mPlayers.get(i).point.getX() + "," + mPlayers.get(i).point.getY() + "), Direction: " + mPlayers.get(i).direction + "\n";
+        }
+        
+        return retString;
+    }
+    
+    public String toStringAck(){
+        String retString = String.format("NSPACKET(FROM: %s, TO: %s, ACKNO: %d)", mSender, mReceiver, mAckNo);
+        return retString;
+    }
+    
 }
