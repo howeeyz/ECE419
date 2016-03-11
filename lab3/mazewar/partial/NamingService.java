@@ -44,7 +44,7 @@ public class NamingService {
     }
     
     //Add a new player to naming service
-    public Player addPlayer(String playerName, int mazeSeed, int mazeWidth, int mazeHeight){
+    public Player addPlayer(String playerName, int mazeSeed, int mazeWidth, int mazeHeight, String host, int port){
         if(getPlayer(playerName) != null)
             return null;
         
@@ -57,7 +57,7 @@ public class NamingService {
         Point point = new Point(randomGen.nextInt(mazeWidth),
                           randomGen.nextInt(mazeHeight));
         
-        Player newPlayer = new Player(playerName, point, Player.North);
+        Player newPlayer = new Player(playerName, point, Player.North, host, port);
         playerList.add(newPlayer);
         return newPlayer;
     }

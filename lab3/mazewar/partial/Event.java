@@ -1,6 +1,6 @@
 import java.io.Serializable;
 
-public class MPacket implements Serializable {
+public class Event implements Serializable {
 
     /*The following are the type of events*/
     public static final int HELLO = 100;
@@ -19,6 +19,7 @@ public class MPacket implements Serializable {
     public static final int LEFT = 203;
     public static final int RIGHT = 204;
     public static final int FIRE = 205;
+    public static final int PROJ_MOVE = 206;
     
     //These fields characterize the event  
     public int type;
@@ -36,12 +37,12 @@ public class MPacket implements Serializable {
     public int mazeWidth; 
     public Player[] players;
 
-    public MPacket(int type, int event){
+    public Event(int type, int event){
         this.type = type;
         this.event = event;
     }
     
-    public MPacket(String name, int type, int event){
+    public Event(String name, int type, int event){
         this.name = name;
         this.type = type;
         this.event = event;

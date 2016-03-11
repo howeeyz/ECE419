@@ -37,7 +37,7 @@ public class NamingServiceSenderThread implements Runnable {
                 if(hello.getmAckNo() > -1){
                     throw new InvalidObjectException("Expecting a sequence packet. Not an acknowledgement");
                 }
-                mNamingService.addPlayer(hello.getmPlayerName(), hello.mazeSeed, hello.mazeWidth, hello.mazeHeight);
+                mNamingService.addPlayer(hello.getmPlayerName(), hello.mazeSeed, hello.mazeWidth, hello.mazeHeight, hello.getHost(), hello.getPort());
             }
             //assert(hello.getmPlayerName() != null);
            

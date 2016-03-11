@@ -15,6 +15,10 @@ import java.util.ArrayList;
 public class NSPacket implements Serializable{
     private int mAckNo = -1;
     private int mSeqNo = 0;
+    
+    private String mHost;
+    private int mPort;
+    
     private String mSender;
     private String mReceiver;
     private String mPlayerName;
@@ -30,13 +34,17 @@ public class NSPacket implements Serializable{
         mSender = null;
         mReceiver = null;
         mPlayerName = null;
+        mHost = null;
+        mPort = -1;
     }
     
     //Client sender packet constructor 
-    public NSPacket(String sender, String receiver, String playerName){
+    public NSPacket(String sender, String receiver, String playerName, String host, int port){
         mSender = sender;
         mReceiver = receiver;
         mPlayerName = playerName;
+        mHost = host;
+        mPort = port;
     }
     
     //Server sender packet constructor
@@ -95,6 +103,14 @@ public class NSPacket implements Serializable{
     public String toStringAck(){
         String retString = String.format("NSPACKET(FROM: %s, TO: %s, ACKNO: %d)", mSender, mReceiver, mAckNo);
         return retString;
+    }
+    
+    public String getHost(){
+        return mHost;
+    }
+    
+    public int getPort(){
+        return mPort;
     }
     
 }

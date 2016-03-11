@@ -52,23 +52,23 @@ public class GUIClient extends LocalClient implements KeyListener {
                         // Up-arrow moves forward.
                         } else if(e.getKeyCode() == KeyEvent.VK_UP) {
                                 //forward();
-                                eventQueue.put(new MPacket(getName(), MPacket.ACTION, MPacket.UP));
+                                eventQueue.put(new Event(getName(), Event.ACTION, Event.UP));
                         // Down-arrow moves backward.
                         } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
                                 //backup();
-                                eventQueue.put(new MPacket(getName(), MPacket.ACTION, MPacket.DOWN));
+                                eventQueue.put(new Event(getName(), Event.ACTION, Event.DOWN));
                         // Left-arrow turns left.
                         } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
                                 //turnLeft();
-                                eventQueue.put(new MPacket(getName(), MPacket.ACTION, MPacket.LEFT));
+                                eventQueue.put(new Event(getName(), Event.ACTION, Event.LEFT));
                         // Right-arrow turns right.
                         } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
                                 //turnRight();
-                                eventQueue.put(new MPacket(getName(), MPacket.ACTION, MPacket.RIGHT));
+                                eventQueue.put(new Event(getName(), Event.ACTION, Event.RIGHT));
                         // Spacebar fires.
                         } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
                                 //fire();
-                                eventQueue.put(new MPacket(getName(), MPacket.ACTION, MPacket.FIRE));
+                                eventQueue.put(new Event(getName(), Event.ACTION, Event.FIRE));
                         }
                 }catch(InterruptedException ie){
                         //An exception is caught, do something
