@@ -122,9 +122,9 @@ public class MSocket{
 
                 Object incoming = in.readObject();
                 while(incoming != null){
-                    MPacket in_packet = (MPacket)incoming;
-                    PairKey<String, Integer> pk = new PairKey<String, Integer>(in_packet.name, in_packet.sequenceNumber);
-                    if (in_packet.type == 200 && !rcvdEvent.containsKey(pk)) {
+                    NSPacket in_packet = (NSPacket)incoming;
+                    PairKey<String, Integer> pk = new PairKey<String, Integer>(in_packet.getmPlayerName(), in_packet.getmSeqNo());
+                    if (!rcvdEvent.containsKey(pk)) {
                         rcvdEvent.put(pk, Boolean.TRUE);
                     }
 

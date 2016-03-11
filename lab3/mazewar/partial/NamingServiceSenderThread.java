@@ -29,18 +29,18 @@ public class NamingServiceSenderThread implements Runnable {
         int playerCount = mSocketList.length;
         Player[] players = new Player[playerCount];
         if(Debug.debug) System.out.println("In handleHello");
-        MPacket hello = null;
+        NSPacket hello = null;
         try{        
             for(int i=0; i<playerCount; i++){
-                hello = (MPacket)eventQueue.take();
+                hello = (NSPacket)eventQueue.take();
                 //Sanity check 
-                if(hello.type != MPacket.HELLO){
+                if(hello.getmAckNo() > -1){
                     throw new InvalidObjectException("Expecting a sequence packet. Not an acknowledgement");
                 }
+                mNamingService.addPlayer(hello.getmPlayerName(), hello.mazeSeed, hello.mazeWidth, hello.mazeHeight);
             }
             //assert(hello.getmPlayerName() != null);
-            mNamingService.addPlayer(hello.name, hello.mazeSeed, hello.mazeWidth, hello.mazeHeight);
-            
+           
             NSPacket toBroadcast = new NSPacket(NamingService.NAMING_SERVICE_STRING, NamingService.BROADCAST_STRING, mNamingService.getPlayerList());
             toBroadcast.setSeqNo(globalSequenceNumber++);
             

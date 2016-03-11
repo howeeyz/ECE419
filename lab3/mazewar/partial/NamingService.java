@@ -11,7 +11,7 @@ public class NamingService {
     //Server waits until the max number of clients to join 
     public static final String BROADCAST_STRING = "Broadcast";
     public static final String NAMING_SERVICE_STRING = "Naming Service";
-    private static final int MAX_CLIENTS = 1;
+    private static final int MAX_CLIENTS = 2;
     private static ArrayList<Player> playerList;
     private NamingServiceSocket mNamingServiceSocket = null;
     private int clientCount; //The number of clients before game starts
@@ -29,15 +29,15 @@ public class NamingService {
         mNamingServiceSocket = new NamingServiceSocket(port);
         if(Debug.debug) System.out.println("Listening on port: " + port);
         mSocketList = new MSocket[MAX_CLIENTS];
-        eventQueue = new LinkedBlockingQueue<MPacket>();
+        eventQueue = new LinkedBlockingQueue<NSPacket>();
     }
     
     //Get Player from naming service and send to client
-    public Client getPlayer(String playerName){
+    public Player getPlayer(String playerName){
        Iterator it = playerList.iterator();
        while(it.hasNext()){
-           Client curr = (Client)it.next();
-           if(curr.getName().equals(playerName))
+           Player curr = (Player)it.next();
+           if(curr.name.equals(playerName))
                return curr;
        }
        return null;

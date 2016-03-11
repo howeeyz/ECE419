@@ -167,8 +167,11 @@ public class Mazewar extends JFrame {
                 }
                 
                 mSocket = new MSocket(serverHost, serverPort);
-                //Send hello packet to server
-                MPacket hello = new MPacket(name, MPacket.HELLO, MPacket.HELLO_INIT);
+                
+                //Send hello packet to server..send NSPacket
+                //MPacket hello = new MPacket(name, MPacket.HELLO, MPacket.HELLO_INIT);
+                NSPacket hello = new NSPacket(name, NamingService.NAMING_SERVICE_STRING, name);
+                
                 hello.mazeWidth = mazeWidth;
                 hello.mazeHeight = mazeHeight;
                 
@@ -176,7 +179,7 @@ public class Mazewar extends JFrame {
                 mSocket.writeObject(hello);
                 if(Debug.debug) System.out.println("hello sent");
                 //Receive response from server
-                MPacket resp = (MPacket)mSocket.readObject();
+                NSPacket resp = (NSPacket)mSocket.readObject();
                 if(Debug.debug) System.out.println("Received response from server");
 
                 //Initialize queue of events
@@ -186,7 +189,7 @@ public class Mazewar extends JFrame {
                 
                 // Create the GUIClient and connect it to the KeyListener queue
                 //RemoteClient remoteClient = null;
-                for(Player player: resp.players){  
+                for(Player player: resp.getmPlayers()){  
                         if(player.name.equals(name)){
                         	if(Debug.debug)System.out.println("Adding guiClient: " + player);
                                 guiClient = new GUIClient(name, eventQueue);

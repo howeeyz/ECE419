@@ -12,11 +12,11 @@ public class NamingServiceListenerThread implements Runnable{
     }
 
     public void run() {
-        MPacket received = null;
+        NSPacket received = null;
         if(Debug.debug) System.out.println("Starting a listener");
         while(true){
             try{
-                received = (MPacket) mSocket.readObject();
+                received = (NSPacket) mSocket.readObject();
                 System.out.println("Received: " + received);
                 eventQueue.put(received);    
             }catch(InterruptedException e){
