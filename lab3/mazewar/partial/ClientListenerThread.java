@@ -30,13 +30,18 @@ public class ClientListenerThread implements Runnable {
     public void run() {
         Token received = null;
         Client client = null;
+        int lastSeenTokenCount = -1;
         if(Debug.debug) System.out.println("Starting ClientListenerThread");
         while(true){
             try{
                 received = (Token) ringSocket.readObject();
-                if(null == received){
+                
+                if(null == received || lastSeenTokenCount == received.getCount()){
                     continue;
                 }
+                //Send an ACK back to the previous node, indicating we successfully
+                //retrieved the token
+                ringSocket.writeObject(new NSPacket(received.getCount()));
                 System.out.println(received.getCount());
 
                 Queue<Event> gQueue = received.getGlobalQueue();
@@ -107,7 +112,7 @@ public class ClientListenerThread implements Runnable {
                 }
                 
                 //Setting this token means we are done what we want to do 
-                
+                received.incCount();
                 System.out.println("Ready to Send");
                 System.out.println(received);
                 
