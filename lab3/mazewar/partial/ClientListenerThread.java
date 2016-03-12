@@ -33,6 +33,9 @@ public class ClientListenerThread implements Runnable {
                 
                 //setting this token means we are done what we want to do 
                 //
+                
+                System.out.println("Ready to Send");
+                
                 Mazewar.token = received;   
                 
 //                System.out.println("Received " + received);
