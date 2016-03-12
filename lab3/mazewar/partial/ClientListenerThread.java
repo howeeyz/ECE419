@@ -9,13 +9,16 @@ public class ClientListenerThread implements Runnable {
     private RingSocket ringSocket  =  null;
     private Hashtable<String, Client> clientTable = null;
     private Player previous;
+    private TokenWrapper mTkWrapper = null;
 
     public ClientListenerThread(RingSocket rSocket,
                                 Hashtable<String, Client> clientTable,
-                                Player prevNode){
+                                Player prevNode,
+                                TokenWrapper tkWrapper){
         this.ringSocket = rSocket;
         this.clientTable = clientTable;
         this.previous = prevNode;
+        this.mTkWrapper = tkWrapper;
         if(Debug.debug) System.out.println("Instatiating ClientListenerThread");
     }
 
@@ -40,7 +43,7 @@ public class ClientListenerThread implements Runnable {
                 System.out.println("Ready to Send");
                 System.out.println(received);
                 
-                Mazewar.token = received;   
+                mTkWrapper.setToken(received);   
                 
 //                System.out.println("Received " + received);
 //                client = clientTable.get(received.name);

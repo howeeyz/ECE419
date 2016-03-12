@@ -113,7 +113,7 @@ public class Mazewar extends JFrame {
         private RingAcceptSocket rAcceptSocket = null;
         private int mPort; //This is the client's port.
         
-        public static Token token = null;
+        final TokenWrapper tkWrapper = new TokenWrapper(null);
         /** 
          * Create the textpane statically so that we can 
          * write to it globally using
@@ -223,7 +223,7 @@ public class Mazewar extends JFrame {
                         
                             if(i == 0){
                                 System.out.println("TOKEN GENERATED MA NIGGA");
-                                token = new Token();
+                                tkWrapper.setToken(new Token());
                             }
                         }
                         
@@ -333,8 +333,8 @@ public class Mazewar extends JFrame {
                 public void run() {
                    try{
                         RingSocket rSocket = rAcceptSocket.accept();
-
-                        new Thread(new ClientListenerThread(rSocket, clientTable, prevNode)).start();   
+                        System.out.println("Accepted");
+                        new Thread(new ClientListenerThread(rSocket, clientTable, prevNode, tkWrapper)).start();   
                    }catch(IOException e){
                        System.out.println("GG can't accept");
                    }
@@ -348,7 +348,7 @@ public class Mazewar extends JFrame {
                         RingSocket rSendSocket = new RingSocket(nextNode.host, nextNode.port);
 
                         //Start a new sender thread 
-                        new Thread(new ClientSenderThread(rSendSocket, eventQueue, nextNode)).start();
+                        new Thread(new ClientSenderThread(rSendSocket, eventQueue, nextNode, tkWrapper)).start();
                    }catch(IOException e){
                        System.out.println("GG can't send connection request");
                    }
