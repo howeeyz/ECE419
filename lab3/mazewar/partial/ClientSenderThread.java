@@ -5,17 +5,16 @@ import java.util.concurrent.BlockingQueue;
 public class ClientSenderThread implements Runnable {
 
     private RingSocket ringSocket = null;
-    //private BlockingQueue<Event> eventQueue = null;
-    private BlockingQueue<Token> eventQueue = null;
+    private BlockingQueue<Token> mTQueue = null;
     private Player next = null;
     private TokenWrapper mTkWrapper = null;
     
     public ClientSenderThread(RingSocket rSocket,
-                              BlockingQueue eventQueue,
+                              BlockingQueue tQueue,
                               Player nextNode,
                               TokenWrapper tkWrapper){
         this.ringSocket = rSocket;
-        this.eventQueue = eventQueue;
+        this.mTQueue = tQueue;
         this.next = nextNode;
         this.mTkWrapper = tkWrapper;
     }
@@ -23,16 +22,19 @@ public class ClientSenderThread implements Runnable {
     public void run() {
         if(Debug.debug) System.out.println("Starting ClientSenderThread");
         while(true){      
-
-            if(mTkWrapper.getToken() != null){
+            if(!mTQueue.isEmpty()){
                 
                 System.out.println("Sending now!");
                 //This tells us that the listener is done doing what it needs to do
                 //Ready to pass off token
-                ringSocket.writeObject(mTkWrapper.getToken());
-                
-                mTkWrapper.clearToken();
-                
+
+                ringSocket.writeObject(mTQueue.peek());
+
+                try{
+                    mTQueue.take();
+                }catch (InterruptedException e){
+                    System.out.println(e);
+                }
                 //TODO: Deal with ACK here
                 
 

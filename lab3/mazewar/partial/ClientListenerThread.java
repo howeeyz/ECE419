@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Hashtable;
+import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -10,13 +11,16 @@ public class ClientListenerThread implements Runnable {
     private Hashtable<String, Client> clientTable = null;
     private Player previous;
     private TokenWrapper mTkWrapper = null;
+    private BlockingQueue<Token> mTQueue = null;
 
     public ClientListenerThread(RingSocket rSocket,
                                 Hashtable<String, Client> clientTable,
+                                BlockingQueue<Token> tQueue,
                                 Player prevNode,
                                 TokenWrapper tkWrapper){
         this.ringSocket = rSocket;
         this.clientTable = clientTable;
+        this.mTQueue = tQueue;
         this.previous = prevNode;
         this.mTkWrapper = tkWrapper;
         if(Debug.debug) System.out.println("Instatiating ClientListenerThread");
@@ -43,7 +47,8 @@ public class ClientListenerThread implements Runnable {
                 System.out.println("Ready to Send");
                 System.out.println(received);
                 
-                mTkWrapper.setToken(received);   
+                assert(mTQueue.isEmpty());
+                mTQueue.put(received);
                 
 //                System.out.println("Received " + received);
 //                client = clientTable.get(received.name);

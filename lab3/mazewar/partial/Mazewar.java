@@ -113,6 +113,8 @@ public class Mazewar extends JFrame {
         private RingAcceptSocket rAcceptSocket = null;
         private int mPort; //This is the client's port.
         
+        private BlockingQueue<Token> tQueue = null;
+        
         final TokenWrapper tkWrapper = new TokenWrapper(null);
         /** 
          * Create the textpane statically so that we can 
@@ -200,6 +202,8 @@ public class Mazewar extends JFrame {
                 
                 //Initialize queue of events
                 eventQueue = new LinkedBlockingQueue<Event>();
+                
+                tQueue = new LinkedBlockingQueue<Token>();
                 //Initialize hash table of clients to client name 
                 clientTable = new Hashtable<String, Client>(); 
                 if(players.size() > 1){ //We only want to set neighbours if there's more than one client. 
@@ -224,6 +228,12 @@ public class Mazewar extends JFrame {
                             if(i == 0){
                                 System.out.println("TOKEN GENERATED MA NIGGA");
                                 tkWrapper.setToken(new Token());
+                                try{
+                                    tQueue.put(new Token());
+                                }catch (InterruptedException e){
+                                    System.out.println(e);
+                                }
+                                
                             }
                         }
                         
@@ -334,7 +344,7 @@ public class Mazewar extends JFrame {
                    try{
                         RingSocket rSocket = rAcceptSocket.accept();
                         System.out.println("Accepted");
-                        new Thread(new ClientListenerThread(rSocket, clientTable, prevNode, tkWrapper)).start();   
+                        new Thread(new ClientListenerThread(rSocket, clientTable, tQueue, prevNode, tkWrapper)).start();   
                    }catch(IOException e){
                        System.out.println("GG can't accept");
                    }
@@ -348,7 +358,7 @@ public class Mazewar extends JFrame {
                         RingSocket rSendSocket = new RingSocket(nextNode.host, nextNode.port);
 
                         //Start a new sender thread 
-                        new Thread(new ClientSenderThread(rSendSocket, eventQueue, nextNode, tkWrapper)).start();
+                        new Thread(new ClientSenderThread(rSendSocket, tQueue, nextNode, tkWrapper)).start();
                    }catch(IOException e){
                        System.out.println("GG can't send connection request");
                    }
