@@ -10,19 +10,16 @@ public class ClientListenerThread implements Runnable {
     private RingSocket ringSocket  =  null;
     private Hashtable<String, Client> clientTable = null;
     private Player previous;
-    private TokenWrapper mTkWrapper = null;
     private BlockingQueue<Token> mTQueue = null;
 
     public ClientListenerThread(RingSocket rSocket,
                                 Hashtable<String, Client> clientTable,
                                 BlockingQueue<Token> tQueue,
-                                Player prevNode,
-                                TokenWrapper tkWrapper){
+                                Player prevNode){
         this.ringSocket = rSocket;
         this.clientTable = clientTable;
         this.mTQueue = tQueue;
         this.previous = prevNode;
-        this.mTkWrapper = tkWrapper;
         if(Debug.debug) System.out.println("Instatiating ClientListenerThread");
     }
 
