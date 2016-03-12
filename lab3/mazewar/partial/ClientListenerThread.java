@@ -26,6 +26,9 @@ public class ClientListenerThread implements Runnable {
         while(true){
             try{
                 received = (Token) ringSocket.readObject();
+                if(null == received){
+                    continue;
+                }
                 System.out.println(received.getCount());
                 received.incCount();
                 
@@ -35,6 +38,7 @@ public class ClientListenerThread implements Runnable {
                 //
                 
                 System.out.println("Ready to Send");
+                System.out.println(received);
                 
                 Mazewar.token = received;   
                 

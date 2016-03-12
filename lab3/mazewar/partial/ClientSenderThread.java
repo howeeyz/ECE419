@@ -19,8 +19,10 @@ public class ClientSenderThread implements Runnable {
     
     public void run() {
         if(Debug.debug) System.out.println("Starting ClientSenderThread");
-        while(true){            
+        while(true){      
             if(Mazewar.token != null){
+                
+                System.out.println("Sending now!");
                 //This tells us that the listener is done doing what it needs to do
                 //Ready to pass off token
                 ringSocket.writeObject(Mazewar.token);
@@ -34,7 +36,6 @@ public class ClientSenderThread implements Runnable {
 //                        AckPacket resp = (AckPacket)ringSocket.readObject();
 //                        acked = resp.acked;
 //                    }
-
             }
         }
     }
