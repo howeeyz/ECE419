@@ -32,7 +32,7 @@ public class Direction {
         /**
          * Create a random number generator to produce random directions.
          */
-        private static Random randomGen = new Random();
+        private static Random randomGen = new Random(1);
         
         /** 
          * Internal representation of directions
