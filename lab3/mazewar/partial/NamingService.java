@@ -11,7 +11,7 @@ public class NamingService {
     //Server waits until the max number of clients to join 
     public static final String BROADCAST_STRING = "Broadcast";
     public static final String NAMING_SERVICE_STRING = "Naming Service";
-    private static final int MAX_CLIENTS = 2;
+    private static final int MAX_CLIENTS = 4;
     private static ArrayList<Player> playerList;
     private NamingServiceSocket mNamingServiceSocket = null;
     private int clientCount; //The number of clients before game starts

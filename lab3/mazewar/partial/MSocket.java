@@ -211,15 +211,15 @@ public class MSocket{
                     int size = Sizeof.sizeof(outgoing);
                     sentBytes += size;
                     if(Debug.debug) System.out.println("Sent packet size is " + size + ". Total bytes sent is " + sentBytes);
-                    if(!dropPacket()){
+//                    if(!dropPacket()){
                         synchronized(out) {
                             out.writeObject(outgoing);
                             out.flush();
                             out.reset();
                         }
-                    }else{
-                        if(Debug.debug) System.out.println("Dropping Packet");
-                    }
+//                    }else{
+//                        if(Debug.debug) System.out.println("Dropping Packet");
+//                    }
 
                 }
 
