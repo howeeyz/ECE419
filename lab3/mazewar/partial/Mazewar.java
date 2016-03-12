@@ -17,24 +17,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 USA.
 */
   
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
-import javax.swing.JPanel;
-import javax.swing.JTable;
-import javax.swing.JOptionPane;
-import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
-import javax.swing.BorderFactory;
+import java.awt.GridBagLayout;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
-import java.net.Socket;
+import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextPane;
 
 /**
  * The entry point and glue code for the game.  It also contains some helpful
@@ -101,12 +100,20 @@ public class Mazewar extends JFrame {
          */
         private JTable scoreTable = null;
         
+        
+        /******** CUSTOM MEMBERS - Lab 3 **********/
+        
         private Player prevNode = null;
         private Player nextNode = null;
         
         private static String host = null;
-        private static int port = -1;
+        private static String clienthost = null;
+        private static int port = -1;   //This is the server port
         
+        private RingAcceptSocket rAcceptSocket = null;
+        private int mPort; //This is the client's port.
+        
+        public static Token token = null;
         /** 
          * Create the textpane statically so that we can 
          * write to it globally using
@@ -177,7 +184,7 @@ public class Mazewar extends JFrame {
                 
                 //Send hello packet to server..send NSPacket
                 //MPacket hello = new MPacket(name, MPacket.HELLO, MPacket.HELLO_INIT);
-                NSPacket hello = new NSPacket(name, NamingService.NAMING_SERVICE_STRING, name, host, port);
+                NSPacket hello = new NSPacket(name, NamingService.NAMING_SERVICE_STRING, name, clienthost, port);
                 
                 hello.mazeWidth = mazeWidth;
                 hello.mazeHeight = mazeHeight;
@@ -198,6 +205,8 @@ public class Mazewar extends JFrame {
                 if(players.size() > 1){ //We only want to set neighbours if there's more than one client. 
                     for(int i = 0; i < resp.getmPlayers().size(); i++){
                         if(players.get(i).name.equals(name)){
+                            
+                            mPort = players.get(i).port;
                             if(i == 0){
                                 prevNode = players.get(players.size()-1);
                                 nextNode = players.get(i+1);
@@ -210,9 +219,18 @@ public class Mazewar extends JFrame {
                                 prevNode = players.get(i-1);
                                 nextNode = players.get(i+1);
                             }
+                        
+                        
+                            if(i == 0){
+                                token = new Token();
+                            }
                         }
+                        
                     }
                 }
+                
+                
+                rAcceptSocket = new RingAcceptSocket(mPort);    //Create an instance of the accept socket
                 
                 // Create the GUIClient and connect it to the KeyListener queue
                 //RemoteClient remoteClient = null;
@@ -307,11 +325,19 @@ public class Mazewar extends JFrame {
          and the ClientListenerThread which is responsible for 
          listening for events
         */
-        private void startThreads(){
+        private void startThreads() throws IOException{
+                //Accept connections on our port
+                
+                RingSocket rSocket = rAcceptSocket.accept();
+                new Thread(new ClientListenerThread(rSocket, clientTable, prevNode)).start();   
+                 
+                 
+                RingSocket rSendSocket = new RingSocket(nextNode.host, nextNode.port);
+                
                 //Start a new sender thread 
-                new Thread(new ClientSenderThread(mSocket, eventQueue, nextNode)).start();
+                new Thread(new ClientSenderThread(rSendSocket, eventQueue, nextNode)).start();
                 //Start a new listener thread 
-                new Thread(new ClientListenerThread(mSocket, clientTable, prevNode)).start();    
+                
         }
 
         
@@ -324,6 +350,8 @@ public class Mazewar extends JFrame {
 
              host = args[0];
              port = Integer.parseInt(args[1]);
+             
+             clienthost = InetAddress.getLocalHost().getHostName();
              /* Create the GUI */
              Mazewar mazewar = new Mazewar(host, port);
              mazewar.startThreads();

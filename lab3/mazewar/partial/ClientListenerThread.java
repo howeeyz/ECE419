@@ -1,48 +1,61 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Hashtable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ClientListenerThread implements Runnable {
 
-    private MSocket mSocket  =  null;
+    private RingSocket ringSocket  =  null;
     private Hashtable<String, Client> clientTable = null;
     private Player previous;
 
-    public ClientListenerThread( MSocket mSocket,
+    public ClientListenerThread(RingSocket rSocket,
                                 Hashtable<String, Client> clientTable,
                                 Player prevNode){
-        this.mSocket = mSocket;
+        this.ringSocket = rSocket;
         this.clientTable = clientTable;
         this.previous = prevNode;
         if(Debug.debug) System.out.println("Instatiating ClientListenerThread");
     }
 
     public void run() {
-        Event received = null;
+        Token received = null;
         Client client = null;
         if(Debug.debug) System.out.println("Starting ClientListenerThread");
         while(true){
             try{
-                received = (Event) mSocket.readObject();
-                System.out.println("Received " + received);
-                client = clientTable.get(received.name);
-                if(received.event == Event.UP){
-                    client.forward();
-                }else if(received.event == Event.DOWN){
-                    client.backup();
-                }else if(received.event == Event.LEFT){
-                    client.turnLeft();
-                }else if(received.event == Event.RIGHT){
-                    client.turnRight();
-                }else if(received.event == Event.FIRE){
-                    client.fire();
-                }else{
-                    throw new UnsupportedOperationException();
-                }    
+                received = (Token) ringSocket.readObject();
+                System.out.println(received.getCount());
+                received.incCount();
+                
+                Thread.sleep(2000);     //Sleep for two seconds. pass it off
+                
+                //setting this token means we are done what we want to do 
+                //
+                Mazewar.token = received;   
+                
+//                System.out.println("Received " + received);
+//                client = clientTable.get(received.name);
+//                if(received.event == Event.UP){
+//                    client.forward();
+//                }else if(received.event == Event.DOWN){
+//                    client.backup();
+//                }else if(received.event == Event.LEFT){
+//                    client.turnLeft();
+//                }else if(received.event == Event.RIGHT){
+//                    client.turnRight();
+//                }else if(received.event == Event.FIRE){
+//                    client.fire();
+//                }else{
+//                    throw new UnsupportedOperationException();
+//                }    
             }catch(IOException e){
                 e.printStackTrace();
             }catch(ClassNotFoundException e){
                 e.printStackTrace();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(ClientListenerThread.class.getName()).log(Level.SEVERE, null, ex);
             }            
         }
     }

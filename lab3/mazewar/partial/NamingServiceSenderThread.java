@@ -1,5 +1,6 @@
 import java.io.InvalidObjectException;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.Random;
 
@@ -10,6 +11,8 @@ public class NamingServiceSenderThread implements Runnable {
     private BlockingQueue eventQueue = null;
     private int globalSequenceNumber; 
     
+    private int portNo = 9002;
+    
     public NamingService mNamingService;
     
     public NamingServiceSenderThread(MSocket[] mSocketList,
@@ -18,6 +21,7 @@ public class NamingServiceSenderThread implements Runnable {
         this.eventQueue = eventQueue;
         this.globalSequenceNumber = 0;
     }
+    
 
     /*
      *Handle the initial joining of players including 
@@ -37,10 +41,9 @@ public class NamingServiceSenderThread implements Runnable {
                 if(hello.getmAckNo() > -1){
                     throw new InvalidObjectException("Expecting a sequence packet. Not an acknowledgement");
                 }
-                mNamingService.addPlayer(hello.getmPlayerName(), hello.mazeSeed, hello.mazeWidth, hello.mazeHeight, hello.getHost(), hello.getPort());
+                mNamingService.addPlayer(hello.getmPlayerName(), hello.mazeSeed, hello.mazeWidth, hello.mazeHeight, hello.getHost(), portNo++);
             }
-            //assert(hello.getmPlayerName() != null);
-           
+        
             NSPacket toBroadcast = new NSPacket(NamingService.NAMING_SERVICE_STRING, NamingService.BROADCAST_STRING, mNamingService.getPlayerList());
             toBroadcast.setSeqNo(globalSequenceNumber++);
             

@@ -1,6 +1,8 @@
 
 import java.io.Serializable;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -15,10 +17,12 @@ import java.util.Queue;
 public class Token implements Serializable {
     private String senderName = null;  //The previous token holder's name
     
+    private int count = 0;
+    
     private Queue<Event> globalQueue;     // global queue that holds all events 
     
-    public Token (Queue<Event> gQueue){
-        globalQueue = gQueue;
+    public Token (){
+        globalQueue = new LinkedBlockingQueue<Event>();
     }
     
     public void setSenderName(String sender){
@@ -31,5 +35,13 @@ public class Token implements Serializable {
     
     public Queue getGlobalQueue() {
         return globalQueue;
+    }
+    
+    public int getCount(){
+        return count;
+    }
+    
+    public void incCount(){
+        count++;
     }
 }
