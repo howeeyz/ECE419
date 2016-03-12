@@ -18,6 +18,7 @@ USA.
 */
   
 import java.util.Iterator;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * An abstract class for representing mazes, and the operations a {@link Client}
@@ -28,7 +29,12 @@ import java.util.Iterator;
 
 public abstract class Maze {
 
-    /* Maze Information ****************************************************/
+    /* Maze Information ****************************************************/        
+    public abstract void setEventQueue(BlockingQueue<Event> eventQueue);
+        
+    public abstract void setCoordinator(boolean isCoordinator);
+        
+    public abstract void setName(String name);
 
     /** 
      * Obtain a {@link Point} describing the size of the {@link Maze}.

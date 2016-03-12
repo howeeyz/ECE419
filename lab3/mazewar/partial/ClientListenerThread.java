@@ -69,6 +69,8 @@ public class ClientListenerThread implements Runnable {
                         client.turnRight();
                     }else if(currEvent.event == Event.FIRE){
                         client.fire();
+                    }else if(currEvent.event == Event.PROJ_MOVE){
+                        client.moveMissile();
                     }else{
                         throw new UnsupportedOperationException();
                     }
@@ -96,6 +98,8 @@ public class ClientListenerThread implements Runnable {
                         me.turnRight();
                     }else if(currEvent.event == Event.FIRE){
                         me.fire();
+                    }else if(currEvent.event == Event.PROJ_MOVE){
+                        me.moveMissile();
                     }else{
                         throw new UnsupportedOperationException();
                     }

@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * A concrete implementation of a {@link Maze}.  
@@ -43,6 +44,9 @@ import java.util.HashMap;
  */
 
 public class MazeImpl extends Maze implements Serializable, ClientListener, Runnable {
+        private String myName = null;
+        private BlockingQueue<Event> mEventQueue = null;
+        private boolean imCoordinator = false;
 
         /**
          * Create a {@link Maze}.
@@ -78,7 +82,19 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
 
                 thread.start();
         }
-       
+        
+        public void setEventQueue(BlockingQueue<Event> eventQueue){
+            mEventQueue = eventQueue;
+        }
+        
+        public void setCoordinator(boolean isCoordinator){
+            imCoordinator = isCoordinator;
+        }
+        
+        public void setName(String name){
+            myName = name;
+        }
+        
         /** 
          * Create a maze from a serialized {@link MazeImpl} object written to a file.
          * @param mazefile The filename to load the serialized object from.
@@ -369,6 +385,9 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
         public void run() {
                 while(true) {
                     // Missle updated by server
+                    if(imCoordinator){
+                        mEventQueue.add(new Event(myName, Event.ACTION, Event.PROJ_MOVE));
+                    }
                     try {
                         thread.sleep(200);
                     } catch(Exception e) {

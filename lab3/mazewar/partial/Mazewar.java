@@ -203,6 +203,8 @@ public class Mazewar extends JFrame {
                 //Initialize queue of events
                 eventQueue = new LinkedBlockingQueue<Event>();
                 
+                maze.setEventQueue(eventQueue);
+                
                 tQueue = new LinkedBlockingQueue<Token>();
                 //Initialize hash table of clients to client name 
                 clientTable = new Hashtable<String, Client>(); 
@@ -226,9 +228,12 @@ public class Mazewar extends JFrame {
                         
                         
                             if(i == 0){
-                                System.out.println("TOKEN GENERATED MA NIGGA");
+                                System.out.println("TOKEN GENERATED!");
+                                
                                 try{
                                     tQueue.put(new Token());
+                                    maze.setName(myPlayer.name);
+                                    maze.setCoordinator(true);
                                 }catch (InterruptedException e){
                                     System.out.println(e);
                                 }

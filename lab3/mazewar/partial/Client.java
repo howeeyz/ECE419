@@ -181,6 +181,12 @@ public abstract class Client {
                 }
         }
         
+        protected boolean moveMissile() {
+            //maybe add notifylisteners
+            maze.missileTick();
+            return true;
+        }
+        
         
         /** 
          * Notify listeners that the client moved forward.

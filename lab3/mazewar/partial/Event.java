@@ -85,12 +85,15 @@ public class Event implements Serializable {
             case 205:
                 eventStr = "FIRE";
                 break;
+            case 206:
+                eventStr = "MISSILE_TICK";
+                break;
             default:
                 eventStr = "ERROR";
                 break;        
         }
         //MPACKET(NAME: name, <typestr: eventStr>, SEQNUM: sequenceNumber)
-        String retString = String.format("MPACKET(NAME: %s, <%s: %s>, SEQNUM: %s)", name, 
+        String retString = String.format("EVENT PACKET(NAME: %s, <%s: %s>, SEQNUM: %s)", name, 
             typeStr, eventStr, sequenceNumber);
         return retString;
     }
