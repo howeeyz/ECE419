@@ -222,6 +222,7 @@ public class Mazewar extends JFrame {
                         
                         
                             if(i == 0){
+                                System.out.println("TOKEN GENERATED MA NIGGA");
                                 token = new Token();
                             }
                         }
