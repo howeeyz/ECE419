@@ -327,20 +327,34 @@ public class Mazewar extends JFrame {
          listening for events
         */
         private void startThreads() throws IOException{
-                //Accept connections on our port
-                
-                RingSocket rSocket = rAcceptSocket.accept();
-                new Thread(new ClientListenerThread(rSocket, clientTable, prevNode)).start();   
-                 
-                 
-                RingSocket rSendSocket = new RingSocket(nextNode.host, nextNode.port);
-                
-                //Start a new sender thread 
-                new Thread(new ClientSenderThread(rSendSocket, eventQueue, nextNode)).start();
-                //Start a new listener thread 
-                
-        }
+            //Accept connections on our port
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                   try{
+                        RingSocket rSocket = rAcceptSocket.accept();
 
+                        new Thread(new ClientListenerThread(rSocket, clientTable, prevNode)).start();   
+                   }catch(IOException e){
+                       System.out.println("GG can't accept");
+                   }
+                }
+            }).start();
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                   try{
+                        RingSocket rSendSocket = new RingSocket(nextNode.host, nextNode.port);
+
+                        //Start a new sender thread 
+                        new Thread(new ClientSenderThread(rSendSocket, eventQueue, nextNode)).start();
+                   }catch(IOException e){
+                       System.out.println("GG can't send connection request");
+                   }
+                }
+            }).start();
+        }
         
         /**
          * Entry point for the game.  
