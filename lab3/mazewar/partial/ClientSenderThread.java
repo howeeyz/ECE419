@@ -6,12 +6,14 @@ public class ClientSenderThread implements Runnable {
 
     private RingSocket ringSocket = null;
     private BlockingQueue<Token> mTQueue = null;
-    private TokenWrapper mTkWrapper = null;
+    private Player myPlayer = null;
     
     public ClientSenderThread(RingSocket rSocket,
-                              BlockingQueue tQueue){
+                              BlockingQueue tQueue,
+                              Player player){
         this.ringSocket = rSocket;
         this.mTQueue = tQueue;
+        this.myPlayer = player;
     }
     
     public void run() {

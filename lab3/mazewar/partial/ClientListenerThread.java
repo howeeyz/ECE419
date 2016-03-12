@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Hashtable;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -9,17 +10,20 @@ public class ClientListenerThread implements Runnable {
 
     private RingSocket ringSocket  =  null;
     private Hashtable<String, Client> clientTable = null;
-    private Player previous;
+    private Player myPlayer;
+    private BlockingQueue<Event> mEventQueue = null;
     private BlockingQueue<Token> mTQueue = null;
 
     public ClientListenerThread(RingSocket rSocket,
                                 Hashtable<String, Client> clientTable,
+                                BlockingQueue<Event> eventQueue,
                                 BlockingQueue<Token> tQueue,
-                                Player prevNode){
+                                Player player){
         this.ringSocket = rSocket;
         this.clientTable = clientTable;
+        this.mEventQueue = eventQueue;
         this.mTQueue = tQueue;
-        this.previous = prevNode;
+        this.myPlayer = player;
         if(Debug.debug) System.out.println("Instatiating ClientListenerThread");
     }
 
@@ -34,12 +38,71 @@ public class ClientListenerThread implements Runnable {
                     continue;
                 }
                 System.out.println(received.getCount());
-                received.incCount();
+
+                Queue<Event> gQueue = received.getGlobalQueue();
                 
-                Thread.sleep(2000);     //Sleep for two seconds. pass it off
+                Event seenEvent = null;
+                Event currEvent = null;
                 
-                //setting this token means we are done what we want to do 
-                //
+                boolean seenSet = false;
+                
+                while(!gQueue.isEmpty()){
+                    if(gQueue.peek().name.equals(myPlayer.name)){
+                        gQueue.remove();
+                        continue;
+                    }
+                    
+                    if(seenEvent == gQueue.peek()){
+                        break;
+                    }
+                    
+                    currEvent = gQueue.remove();
+                    
+                    client = clientTable.get(currEvent.name);
+                    if(currEvent.event == Event.UP){
+                        client.forward();
+                    }else if(currEvent.event == Event.DOWN){
+                        client.backup();
+                    }else if(currEvent.event == Event.LEFT){
+                        client.turnLeft();
+                    }else if(currEvent.event == Event.RIGHT){
+                        client.turnRight();
+                    }else if(currEvent.event == Event.FIRE){
+                        client.fire();
+                    }else{
+                        throw new UnsupportedOperationException();
+                    }
+                    
+                    if(!seenSet){
+                       seenEvent = currEvent;
+                       seenSet = true;
+                    }
+                                   
+                    gQueue.add(currEvent);  //Reinsert events that are not yours
+                }
+                
+                //Process the client's local queue
+                Client me = clientTable.get(myPlayer.name);
+                //After this, insert the client's local queue into the global queue.
+                while(!mEventQueue.isEmpty()){
+                    currEvent = mEventQueue.take();
+                    if(currEvent.event == Event.UP){
+                        me.forward();
+                    }else if(currEvent.event == Event.DOWN){
+                        me.backup();
+                    }else if(currEvent.event == Event.LEFT){
+                        me.turnLeft();
+                    }else if(currEvent.event == Event.RIGHT){
+                        me.turnRight();
+                    }else if(currEvent.event == Event.FIRE){
+                        me.fire();
+                    }else{
+                        throw new UnsupportedOperationException();
+                    }
+                    gQueue.add(currEvent);
+                }
+                
+                //Setting this token means we are done what we want to do 
                 
                 System.out.println("Ready to Send");
                 System.out.println(received);
@@ -47,21 +110,7 @@ public class ClientListenerThread implements Runnable {
                 assert(mTQueue.isEmpty());
                 mTQueue.put(received);
                 
-//                System.out.println("Received " + received);
-//                client = clientTable.get(received.name);
-//                if(received.event == Event.UP){
-//                    client.forward();
-//                }else if(received.event == Event.DOWN){
-//                    client.backup();
-//                }else if(received.event == Event.LEFT){
-//                    client.turnLeft();
-//                }else if(received.event == Event.RIGHT){
-//                    client.turnRight();
-//                }else if(received.event == Event.FIRE){
-//                    client.fire();
-//                }else{
-//                    throw new UnsupportedOperationException();
-//                }    
+
             }catch(IOException e){
                 e.printStackTrace();
             }catch(ClassNotFoundException e){
