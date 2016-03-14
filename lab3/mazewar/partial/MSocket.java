@@ -51,7 +51,7 @@ public class MSocket{
     //0 means no drops
     //for a large number of drops set to >0.5
     //Packets are only droped on send
-    public final double DROP_RATE = 0.2;
+    public final double DROP_RATE = 0.0;
 
     //Number of milli seconds after this MSocket is created
     //that packets are transmitted without network errors
@@ -211,16 +211,11 @@ public class MSocket{
                     int size = Sizeof.sizeof(outgoing);
                     sentBytes += size;
                     if(Debug.debug) System.out.println("Sent packet size is " + size + ". Total bytes sent is " + sentBytes);
-//                    if(!dropPacket()){
-                        synchronized(out) {
-                            out.writeObject(outgoing);
-                            out.flush();
-                            out.reset();
-                        }
-//                    }else{
-//                        if(Debug.debug) System.out.println("Dropping Packet");
-//                    }
-
+                    synchronized(out) {
+                        out.writeObject(outgoing);
+                        out.flush();
+                        out.reset();
+                    }
                 }
 
             }catch(InterruptedException e){
