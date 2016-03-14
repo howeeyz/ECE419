@@ -2,6 +2,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Hashtable;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +28,11 @@ public class ClientListenerThread implements Runnable {
         this.myPlayer = player;
         if(Debug.debug) System.out.println("Instatiating ClientListenerThread");
     }
+    
+    private void transmitAck(final NSPacket ack){
+        System.out.println("Sending Ack");
+        ringSocket.writeObject(ack);
+    }
 
     public void run() {
         Token received = null;
@@ -36,13 +43,25 @@ public class ClientListenerThread implements Runnable {
             try{
                 received = (Token) ringSocket.readObject();
                 
-                if(null == received || lastSeenTokenCount == received.getCount()){
+                if(null == received){
                     continue;
                 }
-                //Send an ACK back to the previous node, indicating we successfully
-                //retrieved the token
-                ringSocket.writeObject(new NSPacket(received.getCount()));
+                
+                if(lastSeenTokenCount >= received.getCount()){
+                    //Send an ACK back to the previous node, indicating we successfully
+                    //retrieved the token
+                    System.out.println("We're stuck!");
+                    System.out.println("Last Seen Token " + lastSeenTokenCount);
+                    System.out.println("Received is " + received.getCount());
+                    transmitAck(new NSPacket(received.getCount()));
+                    continue;
+                }
+
+                transmitAck(new NSPacket(received.getCount()));
+                
                 System.out.println(received.getCount());
+                
+                lastSeenTokenCount = received.getCount();
 
                 Queue<Event> gQueue = received.getGlobalQueue();
                 
@@ -119,7 +138,6 @@ public class ClientListenerThread implements Runnable {
                 assert(mTQueue.isEmpty());
                 mTQueue.put(received);
                 
-
             }catch(IOException e){
                 e.printStackTrace();
             }catch(ClassNotFoundException e){
