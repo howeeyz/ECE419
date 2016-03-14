@@ -28,11 +28,6 @@ public class ClientListenerThread implements Runnable {
         this.myPlayer = player;
         if(Debug.debug) System.out.println("Instatiating ClientListenerThread");
     }
-    
-    private void transmitAck(final NSPacket ack){
-        System.out.println("Sending Ack");
-        ringSocket.writeObject(ack);
-    }
 
     public void run() {
         Token received = null;
@@ -50,26 +45,21 @@ public class ClientListenerThread implements Runnable {
                 if(lastSeenTokenCount >= received.getCount()){
                     //Send an ACK back to the previous node, indicating we successfully
                     //retrieved the token
-                    System.out.println("We're stuck!");
-                    System.out.println("Last Seen Token " + lastSeenTokenCount);
-                    System.out.println("Received is " + received.getCount());
-                    transmitAck(new NSPacket(received.getCount()));
+                    ringSocket.writeObject(new NSPacket(received.getCount()));
                     continue;
                 }
-
-                transmitAck(new NSPacket(received.getCount()));
                 
-                System.out.println(received.getCount());
+                lastSeenTokenCount = received.getCount();   //Update the last seen token to the latest token number
+                ringSocket.writeObject(new NSPacket(received.getCount()));
                 
-                lastSeenTokenCount = received.getCount();
-
                 Queue<Event> gQueue = received.getGlobalQueue();
                 
                 Event seenEvent = null;
                 Event currEvent = null;
                 
                 boolean seenSet = false;
-                
+                // Go through the entire queue and process all events that don't belong
+                // to the local client
                 while(!gQueue.isEmpty()){
                     if(gQueue.peek().name.equals(myPlayer.name)){
                         gQueue.remove();
@@ -132,8 +122,6 @@ public class ClientListenerThread implements Runnable {
                 
                 //Setting this token means we are done what we want to do 
                 received.incCount();
-                System.out.println("Ready to Send");
-                System.out.println(received);
                 
                 assert(mTQueue.isEmpty());
                 mTQueue.put(received);

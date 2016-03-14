@@ -135,7 +135,12 @@ public class RingSocket{
                     int size = Sizeof.sizeof(incoming);
                     rcvdBytes += size;
                     if(Debug.debug) System.out.println("Received Packet size is " + size + ". Total bytes receieved is " + rcvdBytes);
-                    if(Debug.debug) System.out.println("Received packet: " + incoming);
+                    if(incoming.getClass().equals(Token.class)){
+                        Token tk = (Token) incoming;
+                        if(Debug.debug) System.out.println("Received token number: " + tk.getCount());
+                    }else{
+                        if(Debug.debug) System.out.println("Received packet: " + incoming);
+                    }
                     ingressQueue.put(incoming);
 
                     incoming = in.readObject();
@@ -211,15 +216,15 @@ public class RingSocket{
                     int size = Sizeof.sizeof(outgoing);
                     sentBytes += size;
                     if(Debug.debug) System.out.println("Sent packet size is " + size + ". Total bytes sent is " + sentBytes);
-//                    if(!dropPacket()){
+                    if(!dropPacket()){
                         synchronized(out) {
                             out.writeObject(outgoing);
                             out.flush();
                             out.reset();
                         }
-//                    }else{
-//                        if(Debug.debug) System.out.println("Dropping Packet");
-//                    }
+                    }else{
+                        if(Debug.debug) System.out.println("Dropping Packet");
+                    }
 
                 }
 

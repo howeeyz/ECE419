@@ -7,7 +7,7 @@ import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 
 public class ClientSenderThread implements Runnable {
-    private final int TIMEOUT = 100;
+    private final int TIMEOUT = 500;
     private RingSocket ringSocket = null;
     private BlockingQueue<Token> mTQueue = null;
     private Player myPlayer = null;
@@ -25,16 +25,21 @@ public class ClientSenderThread implements Runnable {
         this.myPlayer = player;
     }
     
-    private void transmitToken(final Token tk){
+    private void scheduleTimer(final Token tk){
 
         TimerTask taskPerformer = new TimerTask() {
             public void run() {
-                transmitToken(tk);
+                retransmitToken(tk);
             }
         };
         
-        ackTimer = new Timer("AckTimer", true);
-        ackTimer.schedule(taskPerformer, TIMEOUT);
+        if(ackTimer == null){
+            ackTimer = new Timer("AckTimer", true);
+        }
+        ackTimer.scheduleAtFixedRate(taskPerformer, TIMEOUT, TIMEOUT);
+    }
+    
+    private void retransmitToken(final Token tk){
         ringSocket.writeObject(tk);
     }
     
@@ -44,26 +49,35 @@ public class ClientSenderThread implements Runnable {
             if(!mTQueue.isEmpty()){
                 
                 try{
-                    System.out.println("Sending Token!");
                     //This tells us that the listener is done doing what it needs to do
                     //Ready to pass off token
 
                     Token tk = mTQueue.peek();
-                    transmitToken(tk);
+                    scheduleTimer(tk);
+                    ringSocket.writeObject(tk);
+                    
+                    mTQueue.take();
                     
                     received = (NSPacket)ringSocket.readObject();
                     
-                    while (received == null){
-                        ;
+                    while(received == null){
+                        if(!mTQueue.isEmpty() && mTQueue.peek().getCount() > tk.getCount()){
+                            break;
+                        }
+                        received = (NSPacket)ringSocket.readObject();
                     }
                     
-                    if(tk.getCount() == received.getmAckNo()){
-                        System.out.println("Ack received. Kill timeout, pop token");
+                    // If we receive a newer token from the previous node
+                    // Or if we receive an ack from the next node
+                    // Stop retransmitting packets
+                    if((!mTQueue.isEmpty() && mTQueue.peek().getCount() > tk.getCount()) 
+                        || tk.getCount() == received.getmAckNo()){
                         assert(ackTimer != null);
                         ackTimer.cancel();
                         ackTimer.purge();
-                        mTQueue.take();
+                        ackTimer = null;
                     }
+                    
                 }catch (InterruptedException e){
                     System.out.println(e);
                 }catch (IOException e){
