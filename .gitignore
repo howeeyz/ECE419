@@ -4,3 +4,5 @@
 /lab2/mazewar/build/
 /lab3/nbproject/private/
 *.class
+/ZkExample/nbproject/private/
+/lab4/src/nbproject/private/

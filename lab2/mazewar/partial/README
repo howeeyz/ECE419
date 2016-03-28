@@ -30,7 +30,7 @@ main methods, readObject and writeObject to read and write objects, respectively
 
 The MSocket can reorder packets and add delays based on 
 3 constants defined in MSocket.java, namely DELAY_WEIGHT, DELAY_THRESHOLD, 
-UNORDER_FACTOR. Errors are added both on sending and receiveing packets.
+UNORDER_FACTOR. Errors are added both on sending and receiving packets.
 
 
 Making and Running
