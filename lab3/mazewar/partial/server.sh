@@ -1,9 +1,8 @@
 #!/bin/bash
 
-if [ "$#" -ne 1 ]; then
-    echo "Usage: ./server.sh  <port>"
-    exit 1
-fi
+if [ "$#" -ne 2 ]; then
+    echo "Usage: ./server.sh  <port> <num players>"
+        exit 1
+    fi
 
-${JAVA_HOME}/bin/java NamingService $1 
-
+${JAVA_HOME}/bin/java NamingService $1 $2 

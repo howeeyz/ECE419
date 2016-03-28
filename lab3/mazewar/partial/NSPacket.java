@@ -54,6 +54,11 @@ public class NSPacket implements Serializable{
         mPlayers = players;
     }
     
+    //Ack Constructor
+    public NSPacket(int ackNo){
+        mAckNo = ackNo;
+    }
+    
     public void setSeqNo(int seqNo){
         mSeqNo = seqNo;
     }

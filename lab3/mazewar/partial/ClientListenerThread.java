@@ -2,6 +2,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.Hashtable;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,22 +32,34 @@ public class ClientListenerThread implements Runnable {
     public void run() {
         Token received = null;
         Client client = null;
+        int lastSeenTokenCount = -1;
         if(Debug.debug) System.out.println("Starting ClientListenerThread");
         while(true){
             try{
                 received = (Token) ringSocket.readObject();
+                
                 if(null == received){
                     continue;
                 }
-                System.out.println(received.getCount());
-
+                
+                if(lastSeenTokenCount >= received.getCount()){
+                    //Send an ACK back to the previous node, indicating we successfully
+                    //retrieved the token
+                    ringSocket.writeObject(new NSPacket(received.getCount()));
+                    continue;
+                }
+                
+                lastSeenTokenCount = received.getCount();   //Update the last seen token to the latest token number
+                ringSocket.writeObject(new NSPacket(received.getCount()));
+                
                 Queue<Event> gQueue = received.getGlobalQueue();
                 
                 Event seenEvent = null;
                 Event currEvent = null;
                 
                 boolean seenSet = false;
-                
+                // Go through the entire queue and process all events that don't belong
+                // to the local client
                 while(!gQueue.isEmpty()){
                     if(gQueue.peek().name.equals(myPlayer.name)){
                         gQueue.remove();
@@ -107,14 +121,11 @@ public class ClientListenerThread implements Runnable {
                 }
                 
                 //Setting this token means we are done what we want to do 
-                
-                System.out.println("Ready to Send");
-                System.out.println(received);
+                received.incCount();
                 
                 assert(mTQueue.isEmpty());
                 mTQueue.put(received);
                 
-
             }catch(IOException e){
                 e.printStackTrace();
             }catch(ClassNotFoundException e){

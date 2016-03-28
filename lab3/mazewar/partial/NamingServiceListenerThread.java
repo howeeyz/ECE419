@@ -17,7 +17,6 @@ public class NamingServiceListenerThread implements Runnable{
         while(true){
             try{
                 received = (NSPacket) mSocket.readObject();
-                System.out.println("Received: " + received);
                 eventQueue.put(received);    
             }catch(InterruptedException e){
                 Thread.currentThread().interrupt();    

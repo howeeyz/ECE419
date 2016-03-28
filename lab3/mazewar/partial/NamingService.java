@@ -11,7 +11,8 @@ public class NamingService {
     //Server waits until the max number of clients to join 
     public static final String BROADCAST_STRING = "Broadcast";
     public static final String NAMING_SERVICE_STRING = "Naming Service";
-    private static final int MAX_CLIENTS = 2;
+    
+    private static int max_clients = 0;
     private static ArrayList<Player> playerList;
     private NamingServiceSocket mNamingServiceSocket = null;
     private int clientCount; //The number of clients before game starts
@@ -28,7 +29,7 @@ public class NamingService {
         clientCount = 0; 
         mNamingServiceSocket = new NamingServiceSocket(port);
         if(Debug.debug) System.out.println("Listening on port: " + port);
-        mSocketList = new MSocket[MAX_CLIENTS];
+        mSocketList = new MSocket[max_clients];
         eventQueue = new LinkedBlockingQueue<NSPacket>();
     }
     
@@ -71,7 +72,7 @@ public class NamingService {
     */
     public void startThreads() throws IOException{
         //Listen for new clients
-        while(clientCount < MAX_CLIENTS){
+        while(clientCount < max_clients){
             //Start a new listener thread for each new client connection
             MSocket mSocket = mNamingServiceSocket.accept();
             
@@ -82,7 +83,6 @@ public class NamingService {
             clientCount++;
         }
         
-        System.out.println("Starting NamingServiceSenderThread");
         //Start a new sender thread 
         NamingServiceSenderThread nsst = new NamingServiceSenderThread(mSocketList, eventQueue);
         nsst.mNamingService = this;
@@ -95,6 +95,7 @@ public class NamingService {
     public static void main(String args[]) throws IOException {
         if(Debug.debug) System.out.println("Starting the server");
         int port = Integer.parseInt(args[0]);
+        max_clients = Integer.parseInt(args[1]);
         NamingService ns = new NamingService(port);
                 
         ns.startThreads();    
