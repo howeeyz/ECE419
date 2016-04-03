@@ -13,8 +13,9 @@ import java.io.Serializable;
  */
 public class JobNodeData implements Serializable {
     //Constants
-    public static final int JOB_IN_PROGRESS = 0;
     public static final int JOB_DONE = 1;
+    public static final int  JOB_IN_PROGRESS= 2;
+    public static final int JOB_ERROR = 3;
     
     
     public static String mPassHash = null;   //What hash am I checking?

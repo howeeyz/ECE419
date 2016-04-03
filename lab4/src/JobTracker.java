@@ -84,9 +84,9 @@ public class JobTracker {
             }
         };
         
-        Stat stat = zkc.exists(jobPath, null);
-        
-        if(null == stat){
+        //Check if the /jobs path exists
+        Stat job_stat = zkc.exists(jobPath, null);
+        if(null == job_stat){
             System.out.println("Creating " + jobPath);
             Code ret = zkc.create(
                         jobPath,         // Path of znode
@@ -95,6 +95,20 @@ public class JobTracker {
                         );
             if (ret == Code.OK){
                 System.out.println(jobPath + " znode created!");
+            }
+        }
+        
+        //Check if the /workers path already exists
+        Stat worker_stat = zkc.exists(workerPath, null);
+        if(null == worker_stat){
+            System.out.println("Creating " + workerPath);
+            Code ret = zkc.create(
+                        workerPath,         // Path of znode
+                        null,           //Pass in host information
+                        CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL.
+                        );
+            if (ret == Code.OK){
+                System.out.println(workerPath + " znode created!");
             }
         }
     }
@@ -173,30 +187,25 @@ public class JobTracker {
                                 Stat stat = zkc.exists(path, job_watcher);
                                 
                                 if(null == stat){
-                                    packet.mStatus = JPacket.JOB_ERROR; //set done to true
+                                    //Exists in hashmap but the job doesn't exist
+                                    //in zookeeper
+                                    packet.mStatus = JPacket.JOB_ERROR;
                                 }
                                 else{
-                                    //zkc exists
+                                    //job path exists in zookeeper filesystem! Parse the JobNodeData
                                     byte[] job_bytes = zkc.getZooKeeper().getData(path, null, stat);
                 
-                                    String job =  new String(job_bytes);
+                                    JobNodeData jobNode =  (JobNodeData) SerializerHelper.deserialize(job_bytes);
 
-                                    System.out.println(job);
+                                    System.out.println(jobNode.mPassHash);
 
-                                    String [] status_and_hash = job.split(":");
-
-                                    String status = status_and_hash[0];
-  
-                                    if(status.equals("1")){
-                                        packet.mStatus = JPacket.DONE;
-                                    }
-                                    else{
-                                        packet.mStatus = JPacket.IN_PROGRESS;
-                                    }
+                                    packet.mStatus = jobNode.mStatus;
+                                    packet.mFound = jobNode.mFound;
+                                    packet.mResultString = jobNode.mResultString;
                                 }
                             }
                             else{
-                                packet.mStatus = JPacket.DONE;
+                                packet.mStatus = JPacket.JOB_ERROR;
                             }
                             out.writeObject(packet);
                         }

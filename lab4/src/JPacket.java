@@ -22,6 +22,7 @@ public class JPacket implements Serializable{
     public static final int JOB_ERROR = 3;
     
     public boolean mFound;
+    public String mResultString = null;
     
     public int mStatus;
 
