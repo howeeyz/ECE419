@@ -79,6 +79,8 @@ public class ClientDriver {
               
                 jt_socket = new Socket(ip, Integer.parseInt(port)); 
                 
+                System.out.println("Socket has been made...");
+                
                 out = new ObjectOutputStream(jt_socket.getOutputStream());
                 in = new ObjectInputStream(jt_socket.getInputStream());
 
@@ -99,9 +101,16 @@ public class ClientDriver {
                 System.exit(-1);
             }
         }
+        else{
+            System.out.println("stat is null");
+        }
+        
+        out.writeObject(jp);
         
         //Need to take in the data
-        JPacket jpIn = (JPacket) in.readObject();
+        
+        JPacket jpIn;
+        jpIn = (JPacket) in.readObject();
         
         while(null == jpIn){
             jpIn = (JPacket) in.readObject();
@@ -119,6 +128,9 @@ public class ClientDriver {
         }
         else if(jpIn.mStatus == JPacket.JOB_ERROR){
             System.out.println("Job Error.");
+        }
+        else{
+            System.out.println("ERROR: No Status");
         }
 
 
@@ -148,6 +160,8 @@ public class ClientDriver {
         if(event.getType() != Watcher.Event.EventType.NodeCreated){
             return;
         }
+        
+        System.out.println("I'm handling a client driver event!");
         
         Stat stat = null;
         
