@@ -63,18 +63,8 @@ public class FileServer {
         
         dictionary = new LinkedBlockingQueue<String>();
         allPartitions = new ArrayList<ArrayList<String>>();
-        
-        
+
         zkc = new ZkConnector();
-        
-        try{
-            serverSk = new ServerSocket(PORT_NO);
-        }
-        catch(IOException e){
-            System.err.println("[FileServer] Failed to listen on port " + PORT_NO);
-            System.err.println(e.getMessage());
-            System.exit(-1);
-        }
         
         try {
             zkc.connect(hosts);
@@ -103,7 +93,6 @@ public class FileServer {
             allPartitions.add(partition);
         }
 
-        
         watcher = new Watcher() { // Anonymous Watcher
             @Override
             public void process(WatchedEvent event) {
@@ -111,30 +100,6 @@ public class FileServer {
 
             } };
     }
-    
-    public static void main(String args[]) throws IOException{
-        
-        if (args.length < 1) {
-            System.out.println("Usage: java -classpath lib/zookeeper-3.3.2.jar:lib/log4j-1.2.15.jar:. FileServer zkServer:clientPort <fileName>");
-            return;
-        }
-        String filename = "md5/dictionary/lowercase.rand";
-        if(args.length == 2){
-            filename = args[1];
-        }
-        
-        host = InetAddress.getLocalHost().getHostName();
-        FileServer fss = new FileServer(args[0], filename);
-        
-        fss.determineBoss();
-        
-        System.out.println("Sleeping...");
-        while (true) {
-            try{ Thread.sleep(5000); } catch (Exception e) {}
-        }
-    }
-
-
     private void determineBoss() {
         Stat stat = zkc.exists(myPath, watcher);
         if (stat == null) {              // znode doesn't exist; let's try creating it
@@ -154,6 +119,16 @@ public class FileServer {
     }
     
     private void acceptSocketConnection(){
+        try{
+            if(null == serverSk){
+                serverSk = new ServerSocket(PORT_NO);
+            }   
+        }
+        catch(IOException e){
+            System.err.println("[FileServer] Failed to listen on port " + PORT_NO);
+            System.err.println(e.getMessage());
+            System.exit(-1);
+        }
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -165,7 +140,6 @@ public class FileServer {
                     System.err.println(e.getMessage());
                     System.exit(-1);
                 }
-
                 try{
                  in = new ObjectInputStream(client.getInputStream());
                  out = new ObjectOutputStream(client.getOutputStream());
@@ -214,4 +188,23 @@ public class FileServer {
         }
     }
     
+    public static void main(String args[]) throws IOException{
+        
+        if (args.length < 1) {
+            System.out.println("Usage: java -classpath lib/zookeeper-3.3.2.jar:lib/log4j-1.2.15.jar:. FileServer zkServer:clientPort <fileName>");
+            return;
+        }
+        String filename = "md5/dictionary/lowercase.rand";
+        if(args.length == 2){
+            filename = args[1];
+        }
+        
+        host = InetAddress.getLocalHost().getHostName();
+        FileServer fss = new FileServer(args[0], filename);
+        fss.determineBoss();
+        System.out.println("Sleeping...");
+        while (true) {
+            try{ Thread.sleep(5000); } catch (Exception e) {}
+        }
+    }
 }
