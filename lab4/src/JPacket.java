@@ -21,6 +21,8 @@ public class JPacket implements Serializable{
     public static final int IN_PROGRESS = 2;
     public static final int JOB_ERROR = 3;
     
+    public boolean mFound;
+    
     public int mStatus;
 
     public int mType;
@@ -30,12 +32,14 @@ public class JPacket implements Serializable{
         mType = 0;
         mPHash = null;
         mStatus = -1;
+        mFound = false;
     }
     
-    public JPacket (int type, String pHash, int status){
+    public JPacket (int type, String pHash, int status, boolean found){
         mType = type;
         mPHash = pHash;
         mStatus = status;
+        mFound = found;
     }
 
     
