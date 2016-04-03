@@ -1,3 +1,6 @@
+
+import java.io.Serializable;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -8,7 +11,7 @@
  *
  * @author wingsion
  */
-public class TaskNodeData {
+public class TaskNodeData implements Serializable {
     //Constants
     public static final int JOB_IN_PROGRESS = 0;
     public static final int JOB_DONE = 1;

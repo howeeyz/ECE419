@@ -158,6 +158,9 @@ public class JobTracker {
                         while(packet == null){
                             packet = (JPacket) in.readObject();
                         }
+                        
+                        System.out.println("Successfully read a packet!");
+                        System.out.println(packet.mPHash);
                         if(packet.mType == JPacket.STATUS){
                             //If the client is requesting a status, check if the current
                             //job request 
@@ -201,6 +204,8 @@ public class JobTracker {
                             //client sent us a new job.
                             if(jobMap.containsKey(packet.mPHash)){
                                 //This job has already been processed, let's check the hashmap
+                                packet.mStatus = JPacket.IN_PROGRESS;
+                                out.writeObject(packet);
                                 continue;
                             }
                             String new_job_path = jobPath + "/" + "job";
@@ -221,12 +226,16 @@ public class JobTracker {
                             }
                             
                             jobMap.put(packet.mPHash, path);    //Insert new job into hashmap
+                            
+                            packet.mStatus = JPacket.IN_PROGRESS;
+                            out.writeObject(packet);
                         }
                      }
                      catch(IOException e){
-                        System.err.println("[JobTracker] Failed to read data from socket.");
+                        System.err.println("[JobTracker] Socket Closed");
                         System.err.println(e.getMessage());
-                        System.exit(-1);
+                        acceptSocketConnection();
+                        return;
                      }
                      catch(ClassNotFoundException e){
                         System.err.println("[JobTracker] Class not found.");
