@@ -170,9 +170,7 @@ public class JobTracker {
                                 Stat stat = zkc.exists(path, job_watcher);
                                 
                                 if(null == stat){
-                                    //Doesn't exist, remove from map and 
-                                    jobMap.remove(packet.mPHash);
-                                    packet.mStatus = JPacket.DONE; //set done to true
+                                    packet.mStatus = JPacket.JOB_ERROR; //set done to true
                                 }
                                 else{
                                     //zkc exists
@@ -201,6 +199,10 @@ public class JobTracker {
                         }
                         else{
                             //client sent us a new job.
+                            if(jobMap.containsKey(packet.mPHash)){
+                                //This job has already been processed, let's check the hashmap
+                                continue;
+                            }
                             String new_job_path = jobPath + "/" + "job";
                             System.out.println("New absolute path of job: " + new_job_path);
                             JobNodeData data = new JobNodeData(packet.mPHash);
@@ -215,6 +217,7 @@ public class JobTracker {
                                 String task_path = path + "/task";
                                 TaskNodeData taskData = new TaskNodeData(packet.mPHash, i);
                                 String sequential_path = zkc.getZooKeeper().create(task_path, SerializerHelper.serialize(taskData), acl, CreateMode.PERSISTENT_SEQUENTIAL);
+                                System.out.println("Task Absolute path after zkc create: " + sequential_path);
                             }
                             
                             jobMap.put(packet.mPHash, path);    //Insert new job into hashmap
