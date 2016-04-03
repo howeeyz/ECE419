@@ -6,3 +6,6 @@
 *.class
 /ZkExample/nbproject/private/
 /lab4/src/nbproject/private/
+/lab4/nbproject/private/
+/lab4/src/build/
+/lab4/src/dist/
