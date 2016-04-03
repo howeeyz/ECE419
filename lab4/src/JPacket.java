@@ -17,7 +17,11 @@ public class JPacket implements Serializable{
     public static final int JOB = 100;
     public static final int STATUS = 200;
     
-    public boolean mDone;
+    public static final int DONE = 1;
+    public static final int IN_PROGRESS = 2;
+    public static final int JOB_ERROR = 3;
+    
+    public int mStatus;
 
     public int mType;
     public String mPHash;
@@ -25,13 +29,13 @@ public class JPacket implements Serializable{
     public JPacket(){
         mType = 0;
         mPHash = null;
-        mDone = false;
+        mStatus = -1;
     }
     
-    public JPacket (int type, String pHash, boolean done){
+    public JPacket (int type, String pHash, int status){
         mType = type;
         mPHash = pHash;
-        mDone = done;
+        mStatus = status;
     }
 
     
