@@ -16,6 +16,8 @@ public class JPacket implements Serializable{
     /*Use this to differentiate between job and status*/
     public static final int JOB = 100;
     public static final int STATUS = 200;
+    
+    public boolean mDone;
 
     public int mType;
     public String mPHash;
@@ -23,11 +25,14 @@ public class JPacket implements Serializable{
     public JPacket(){
         mType = 0;
         mPHash = null;
+        mDone = false;
     }
     
-    public JPacket (int type, String pHash){
+    public JPacket (int type, String pHash, boolean done){
         mType = type;
         mPHash = pHash;
+        mDone = done;
     }
+
     
 }
