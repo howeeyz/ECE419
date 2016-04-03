@@ -148,27 +148,29 @@ public class Worker {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-//                try{
-//                    jt_socket = serverSk.accept();
-//                }
-//                catch(IOException e){
-//                    System.err.println("[FileServer] Failed to accept a socket connection.");
-//                    System.err.println(e.getMessage());
-//                    System.exit(-1);
-//                }
-//
-//                try{
-//                    in = new ObjectInputStream(jt_socket.getInputStream());
-//                    out = new ObjectOutputStream(jt_socket.getOutputStream());
-//                } catch (IOException e) {
-//                    System.out.println("Read failed");
-//                    System.exit(-1);
-//                }
+                try{
+                    jt_socket = serverSk.accept();
+                }
+                catch(IOException e){
+                    System.err.println("[FileServer] Failed to accept a socket connection.");
+                    System.err.println(e.getMessage());
+                    System.exit(-1);
+                }
+
+                try{
+                    in = new ObjectInputStream(jt_socket.getInputStream());
+                    out = new ObjectOutputStream(jt_socket.getOutputStream());
+                } catch (IOException e) {
+                    System.out.println("Read failed");
+                    System.exit(-1);
+                }
 
                 while(true){
                      try{
-                        //PasswordTask task = (PasswordTask) in.readObject();
-                        PasswordTask task = new PasswordTask(MD5Test.getHash("4nthropometric"), 0);
+                        PasswordTask task = (PasswordTask) in.readObject();
+                        
+                        //Uncomment if you want to test file server.
+                        //PasswordTask task = new PasswordTask(MD5Test.getHash("bl4h bl4h"), 0);
                         if(task != null){
                             //Go to file server and request a partition
                             assert(fs_socket != null);
@@ -187,7 +189,7 @@ public class Worker {
                                 if(hash_word.equals(task.getHashString())){
                                     System.out.println("Word Found! " + word + " hashes to " + hash_word);
                                     found = true;
-//                                    out.writeObject(word);
+                                    out.writeObject(word);
                                     break;
                                 }
                             }
