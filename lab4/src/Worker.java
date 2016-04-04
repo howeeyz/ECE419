@@ -69,15 +69,6 @@ public class Worker {
     
     
     public Worker(String hosts) {
-        eventQueue = new LinkedBlockingQueue();
-        try{
-            serverSk = new ServerSocket(PORT_NO);
-        }
-        catch(IOException e){
-            System.err.println("[Worker] Failed to listen on port " + PORT_NO);
-            System.err.println(e.getMessage());
-            System.exit(-1);
-        }
        
         fs_watcher = new Watcher() { // Anonymous Watcher
             @Override
@@ -203,15 +194,10 @@ public class Worker {
                             cjob_path = job_path + "/" + jobChildren.get(i);
                             
                             taskList = zkc.getZooKeeper().getChildren(cjob_path, null, stat);
-                            
-                            System.out.println(cjob_path);
-                            
+                                                        
                             jnd = (JobNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(cjob_path, null, stat));
                             
-                            System.out.println("I get here");
-                            
                             if(taskList.size() == 0 || jnd.mStatus == JobNodeData.JOB_DONE){
-                                System.out.println("The Job is Done...or there are no tasks!");
                                 continue;
                             }
                             
@@ -223,8 +209,6 @@ public class Worker {
                                 TaskNodeData tnd = (TaskNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(task_path, null, stat));
                                 
                                 if(tnd.mOwner == null){
-                                    
-                                    System.out.println("No Owner for task_path");
                                     
                                     tnd.mOwner = my_path;
                                     
@@ -264,7 +248,6 @@ public class Worker {
                         //partition exists here.
                         boolean found = false;
                         for(String word : partition){
-                            System.out.println(word);
                             String hash_word = MD5Test.getHash(word);
                             if(hash_word.equals(MD5Test.getHash(task.getHashString()))){
                                 System.out.println("Word Found! " + word + " hashes to " + hash_word);
@@ -283,11 +266,15 @@ public class Worker {
                         if(!found){
                             //Set the not found stuff...
                             System.out.println("Word Not Found!");
+
                         }
                         
                         //Time to delete the task
+                        stat = zkc.exists(fs_path, fs_watcher);
                         
-                        zkc.getZooKeeper().delete(task_path, -1);
+                        if(stat != null){
+                            zkc.getZooKeeper().delete(task_path, -1);
+                        }
                         
                      }
                      catch(IOException e){
@@ -303,7 +290,7 @@ public class Worker {
                      catch(KeeperException ke){
                         System.err.println("[Worker] Keeper Exception!");
                         System.err.println(ke.getMessage());
-                        System.exit(-1);
+                        continue;
                      }
                      catch(InterruptedException ie){
                         System.err.println("[Worker] Interrupted Exception!");
