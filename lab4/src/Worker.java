@@ -280,7 +280,8 @@ public class Worker {
                      catch(IOException e){
                         System.err.println("[Worker] Failed to read data from socket");
                         System.err.println(e.getMessage());
-                        System.exit(-1);
+                        
+                        continue;
                      }
                      catch(ClassNotFoundException ce){
                         System.err.println("[Worker] Class doesn't exist");
@@ -306,46 +307,57 @@ public class Worker {
     
     private void handleFSEvent(WatchedEvent event){
         //Connected to Zk, let's lookup the IP of file server
+        
+        if(event.getType() == Watcher.Event.EventType.NodeDeleted){
+            zkc.exists(fs_path, fs_watcher);
+            return;
+        }
+        else if(event.getType() != Watcher.Event.EventType.NodeCreated){
+            return;
+        }
+        
         Stat stat = null;
         
         stat = zkc.exists(fs_path, fs_watcher);
-        
-        if(null != stat){
-            //There's an instance of the primary file server.
-            try{
-                byte[] host_bytes = zkc.getZooKeeper().getData(fs_path, fs_watcher, stat);
-                
-                String host =  host_bytes.toString();
-
-                String [] ip_and_port = host.split(":");
-                
-                String ip = ip_and_port[0];
-                String port = ip_and_port[1];
-                
-                
-                fs_socket = new Socket(ip, Integer.getInteger(port)); 
-                
-                fs_out = new ObjectOutputStream(fs_socket.getOutputStream());
-                fs_in = new ObjectInputStream(fs_socket.getInputStream());
-                
-                
-
-            }
-            catch(KeeperException e){
-                System.err.println("[Worker] Failed to get data from znode. Keeper Exception");
-                System.err.println(e.getMessage());
-            }
-            catch(InterruptedException ie){
-                System.err.println("[Worker] Failed to get data from znode. Interrupted Exception");
-                System.err.println(ie.getMessage());
-                System.exit(-1);
-            }
-            catch(IOException ioe){
-                System.err.println("[Worker] Failed to create I/O streams.");
-                System.err.println(ioe.getMessage());
-                System.exit(-1);
-            }
+        if(null == stat){
+            return;
         }
+        
+        //There's an instance of the primary file server.
+        try{
+            byte[] host_bytes = zkc.getZooKeeper().getData(fs_path, fs_watcher, stat);
+
+            String host =  new String(host_bytes);
+
+            String [] ip_and_port = host.split(":");
+
+            String ip = ip_and_port[0];
+            String port = ip_and_port[1];
+
+
+            fs_socket = new Socket(ip, Integer.parseInt(port)); 
+
+            fs_out = new ObjectOutputStream(fs_socket.getOutputStream());
+            fs_in = new ObjectInputStream(fs_socket.getInputStream());
+
+
+
+        }
+        catch(KeeperException e){
+            System.err.println("[Worker] Failed to get data from znode. Keeper Exception");
+            System.err.println(e.getMessage());
+        }
+        catch(InterruptedException ie){
+            System.err.println("[Worker] Failed to get data from znode. Interrupted Exception");
+            System.err.println(ie.getMessage());
+            System.exit(-1);
+        }
+        catch(IOException ioe){
+            System.err.println("[Worker] Failed to create I/O streams.");
+            System.err.println(ioe.getMessage());
+            System.exit(-1);
+        }
+        
     }
     
     public static void main(String args[]) throws UnknownHostException{
