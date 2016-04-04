@@ -21,7 +21,6 @@ public class TaskNodeData implements Serializable {
     public int mPartID = -1;
     public String mOwner = null;
     
-    
     public TaskNodeData(String passHash, int partID){
         mPassHash = passHash;
         mPartID = partID;
