@@ -268,7 +268,7 @@ public class JobTracker {
                                 TaskNodeData taskData = new TaskNodeData(packet.mPHash, i);
                                 String sequential_path = zkc.getZooKeeper().create(task_path, SerializerHelper.serialize(taskData), acl, CreateMode.PERSISTENT_SEQUENTIAL);
                                 System.out.println("Task Absolute path after zkc create: " + sequential_path);
-                                zkc.exists(task_path, task_watcher);    //Set a watcher to update workers hashMap
+                                zkc.exists(sequential_path, task_watcher);    //Set a watcher to update workers hashMap
                             }
                             
                             jobMap.put(packet.mPHash, path);    //Insert new job into hashmap
@@ -369,7 +369,7 @@ public class JobTracker {
                                    continue;
                                }
 
-                               Stat stat = zkc.exists(taskPath,  null);
+                               Stat stat = zkc.exists(taskPath,  task_watcher);
 
                                if(null != stat){
                                    //The path exists with the task.
@@ -408,8 +408,10 @@ public class JobTracker {
               System.exit(-1);
             }
         }
-         
-
+        else{
+            zkc.exists(path, workers_watcher);    //Set a watcher to update workers hashMap
+            return;
+        }
     }
     
     public void handleTaskEvent(WatchedEvent event){
@@ -417,6 +419,14 @@ public class JobTracker {
         String path = event.getPath();
         EventType type = event.getType();
         Stat stat = null;
+        if (type == Watcher.Event.EventType.NodeDeleted) {
+            //Node's been deleted, we don't care anymore
+            return;
+        }  
+        if (type != Watcher.Event.EventType.NodeDataChanged) {
+            zkc.exists(path, task_watcher);    //Set a watcher to update workers hashMap
+            return;
+        }      
         try{
             if (type == Watcher.Event.EventType.NodeDataChanged) {
                 TaskNodeData task = (TaskNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(path, task_watcher, stat));
