@@ -50,11 +50,6 @@ public class Worker {
     
     private static String my_path = null;
     
-    private static final int PORT_NO = 9002;
-    
-    private static String host = null;
-    
-    private BlockingQueue eventQueue = null;
     private ZkConnector zkc = null;
     private Watcher fs_watcher;
     
@@ -62,8 +57,6 @@ public class Worker {
     
     //Socket member variables
     private Socket fs_socket = null;
-    private Socket jt_socket = null;
-    private ServerSocket serverSk = null;
     private ObjectInputStream fs_in = null;
     private ObjectOutputStream fs_out = null;
     
@@ -89,14 +82,6 @@ public class Worker {
         }
         
         Stat stat = null;
-        
-        String host_and_port = host + ":" + PORT_NO;
-        
-        //THIS NEEDS TO CHANGE....CHECK IF IT EXISTS...THEN APPEND
-//        public String create(String path,
-//                     byte[] data,
-//                     List<ACL> acl,
-//                     CreateMode createMode)
 
         try{
             stat = zkc.getZooKeeper().exists(worker_path, null);
@@ -156,7 +141,6 @@ public class Worker {
         catch(IOException ioe){
             System.err.println("[Worker] Failed to create I/O streams.");
             System.err.println(ioe.getMessage());
-            System.exit(-1);
         }
         //Keep checking if there are jobs and tasks available
         jobChecker();
@@ -171,10 +155,8 @@ public class Worker {
                 while(true){
                      try{
                         Stat stat = null;
-                         
-                        
                         String passHash = null;   //What hash am I checking?
-                        int partID = -1;
+                        int partID = -1;    //What partition ID do I check
                         
                         JobNodeData jnd = null;
                         
@@ -185,7 +167,7 @@ public class Worker {
                         }
                         
                         Collections.sort(jobChildren);
-                        List<String> taskList;
+                        List<String> taskList = null;
                         
                         String task_path = null;
                         String cjob_path = null;
@@ -197,12 +179,13 @@ public class Worker {
                                                         
                             jnd = (JobNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(cjob_path, null, stat));
                             
-                            if(taskList.size() == 0 || jnd.mStatus == JobNodeData.JOB_DONE){
+                            if(jnd.mStatus == JobNodeData.JOB_DONE || taskList.isEmpty()){
                                 continue;
                             }
                             
+                            //There are tasks that still exist
                             for(int j = 0; j < taskList.size(); j++){
-                                task_path = job_path + "/" + jobChildren.get(i) + "/" + taskList.get(j);
+                                task_path = cjob_path + "/" + taskList.get(j);
                                 
                                 System.out.println(task_path);
                                 
@@ -213,7 +196,7 @@ public class Worker {
                                     tnd.mOwner = my_path;
                                     
                                     //Set the owner on the znode appropriately
-                                    stat = zkc.getZooKeeper().setData(my_path, SerializerHelper.serialize(tnd), -1);
+                                    stat = zkc.getZooKeeper().setData(task_path, SerializerHelper.serialize(tnd), -1);
                                     
                                     passHash = tnd.mPassHash;
                                     partID = tnd.mPartID;
@@ -266,7 +249,6 @@ public class Worker {
                         if(!found){
                             //Set the not found stuff...
                             System.out.println("Word Not Found!");
-
                         }
                         
                         //Time to delete the task
@@ -280,7 +262,6 @@ public class Worker {
                      catch(IOException e){
                         System.err.println("[Worker] Failed to read data from socket");
                         System.err.println(e.getMessage());
-                        
                         continue;
                      }
                      catch(ClassNotFoundException ce){
@@ -308,11 +289,8 @@ public class Worker {
     private void handleFSEvent(WatchedEvent event){
         //Connected to Zk, let's lookup the IP of file server
         
-        if(event.getType() == Watcher.Event.EventType.NodeDeleted){
+        if(event.getType() != Watcher.Event.EventType.NodeCreated){
             zkc.exists(fs_path, fs_watcher);
-            return;
-        }
-        else if(event.getType() != Watcher.Event.EventType.NodeCreated){
             return;
         }
         
@@ -339,9 +317,6 @@ public class Worker {
 
             fs_out = new ObjectOutputStream(fs_socket.getOutputStream());
             fs_in = new ObjectInputStream(fs_socket.getInputStream());
-
-
-
         }
         catch(KeeperException e){
             System.err.println("[Worker] Failed to get data from znode. Keeper Exception");
@@ -355,9 +330,8 @@ public class Worker {
         catch(IOException ioe){
             System.err.println("[Worker] Failed to create I/O streams.");
             System.err.println(ioe.getMessage());
-            System.exit(-1);
+            return;
         }
-        
     }
     
     public static void main(String args[]) throws UnknownHostException{
@@ -366,8 +340,6 @@ public class Worker {
             System.out.println("Usage: java -classpath lib/zookeeper-3.3.2.jar:lib/log4j-1.2.15.jar:. Worker zkServer:clientPort");
             return;
         }
-        
-        host = Inet4Address.getLocalHost().getHostName();
         
         Worker worker = new Worker(args[0]);
         
