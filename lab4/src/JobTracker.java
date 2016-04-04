@@ -128,9 +128,10 @@ public class JobTracker {
                             );
                 if (ret == Code.OK){
                     System.out.println(workerPath + " znode created!");
-                    workersList = zkc.getZooKeeper().getChildren(workerPath, workers_watcher);
                 }
             }
+            //register initial watchers
+            workersList = zkc.getZooKeeper().getChildren(workerPath, workers_watcher);
         }
         catch(KeeperException e){
             System.err.println("[JobTracker] ZooKeeper Exception");
@@ -142,6 +143,8 @@ public class JobTracker {
             System.err.println(e.getMessage());
             System.exit(-1);
         }
+        
+        
 
     }
     
@@ -346,42 +349,41 @@ public class JobTracker {
          
         String path = event.getPath();
         EventType type = event.getType();
+        
+        System.out.println(path);
+        System.out.println(type);
 
         if(path.equalsIgnoreCase(workerPath) && type == Watcher.Event.EventType.NodeChildrenChanged){
             try{
                 List<String> newWorkerList = zkc.getZooKeeper().getChildren(workerPath,
                  workers_watcher);
-         
-                if(!newWorkerList.containsAll(workersList)){
-                    // There's a missing worker in the new worker list
-                    for(String worker : workersList){
-                        if(!newWorkerList.contains(worker)){
-                           //Check if worker exists in the hashmap
-                           // If it does, find the one task it was working on
-                           // If it exists and the missing worker is in fact the owner.
-                           // Set owner to null.
+                for(String worker : workersList){
+                    String absoluteWorkerPath = workerPath + "/" + worker;
+                    if(!newWorkerList.contains(worker)){
+                       //Check if worker exists in the hashmap
+                       // If it does, find the one task it was working on
+                       // If it exists and the missing worker is in fact the owner.
+                       // Set owner to null.
 
-                           if(workersMap.containsKey(worker)){
-                               String taskPath = workersMap.get(worker);
+                       if(workersMap.containsKey(absoluteWorkerPath)){
+                           String taskPath = workersMap.get(absoluteWorkerPath);
 
-                               if(null==taskPath){
-                                   workersMap.remove(worker);
-                                   continue;
-                               }
+                           if(null==taskPath){
+                               continue;
+                           }
 
-                               Stat stat = zkc.exists(taskPath,  task_watcher);
+                           Stat stat = zkc.exists(taskPath, null);
 
-                               if(null != stat){
-                                   //The path exists with the task.
-                                   TaskNodeData taskData = (TaskNodeData)SerializerHelper.deserialize(zkc.getZooKeeper().getData(taskPath, null, stat));
-                                   if(taskData.mOwner.equals(worker)){
-                                       taskData.mOwner = null;
-                                   }
+                           if(null != stat){
+                               //The path exists with the task.
+                               TaskNodeData taskData = (TaskNodeData)SerializerHelper.deserialize(zkc.getZooKeeper().getData(taskPath, null, stat));
+                               if(null != taskData && null != taskData.mOwner && taskData.mOwner.equals(absoluteWorkerPath)){
 
+                                   taskData.mOwner = null;
                                    zkc.getZooKeeper().setData(taskPath, SerializerHelper.serialize(taskData), -1);
                                }
-                           }   
-                       }
+                           }
+                       }   
                    }
                }
 
@@ -408,7 +410,7 @@ public class JobTracker {
               System.exit(-1);
             }
         }
-        else{
+        else if(path.equalsIgnoreCase(workerPath)){
             zkc.exists(path, workers_watcher);    //Set a watcher to update workers hashMap
             return;
         }
@@ -430,8 +432,15 @@ public class JobTracker {
         try{
             if (type == Watcher.Event.EventType.NodeDataChanged) {
                 TaskNodeData task = (TaskNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(path, task_watcher, stat));
+                
+                System.out.println(task.mOwner);
 
-                workersMap.put(task.mOwner, path);
+                if(workersMap.contains(task.mOwner)){
+                    workersMap.replace(task.mOwner, path);
+                }
+                else{
+                    workersMap.put(task.mOwner, path);
+                }
             }            
         }
         catch(IOException e){

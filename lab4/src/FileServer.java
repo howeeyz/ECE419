@@ -90,7 +90,6 @@ public class FileServer {
             @Override
             public void process(WatchedEvent event) {
                 handleEvent(event);
-
             } };
     }
     private void determineBoss() {
@@ -168,6 +167,7 @@ public class FileServer {
         EventType type = event.getType();
         System.out.println("HandleFSEvent");
         if(path.equalsIgnoreCase(myPath)) {
+            System.out.println("Our paths match " + path);
             if (type == EventType.NodeDeleted) {
                 System.out.println(myPath + " deleted! Let's go!");       
                 determineBoss(); // try to become the boss
@@ -193,7 +193,9 @@ public class FileServer {
         
         host = InetAddress.getLocalHost().getHostName();
         FileServer fss = new FileServer(args[0], filename);
+        
         fss.determineBoss();
+        
         System.out.println("Sleeping...");
         while (true) {
             try{ Thread.sleep(5000); } catch (Exception e) {}

@@ -252,7 +252,7 @@ public class Worker {
                         }
                         
                         //Time to delete the task
-                        stat = zkc.exists(fs_path, fs_watcher);
+                        stat = zkc.exists(task_path, null);
                         
                         if(stat != null){
                             zkc.getZooKeeper().delete(task_path, -1);
