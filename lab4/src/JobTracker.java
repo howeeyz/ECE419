@@ -65,14 +65,13 @@ public class JobTracker {
         jobMap = new ConcurrentHashMap<String, String>(); 
         workersMap = new ConcurrentHashMap<String, String>();
         
-        
         //Initialize Workers List
         workersList = new ArrayList<String>();
         
         
         //At this point, zookeeper is connected
         
-        //set a new primary watcher.
+        //Set a new primary watcher.
         primary_watcher = new Watcher() { // Anonymous Watcher
             @Override
             public void process(WatchedEvent event) {
@@ -144,7 +143,7 @@ public class JobTracker {
             System.exit(-1);
         }
         
-        
+        //Initialize the worker hashMap
 
     }
     

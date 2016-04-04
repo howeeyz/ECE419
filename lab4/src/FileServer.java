@@ -113,8 +113,8 @@ public class FileServer {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                ObjectInputStream in = null;
                 ObjectOutputStream out = null;
+                ObjectInputStream in = null;
                 try{
                     ServerSocket serverSk = new ServerSocket(0);
                     String host_and_port = host + ":" + serverSk.getLocalPort();    //Serialize the host and port
@@ -122,8 +122,8 @@ public class FileServer {
                     zkc.getZooKeeper().setData(myPath, host_and_port.getBytes(), -1);
                     Socket client = serverSk.accept();
                     acceptSocketConnection();   //Start accepting a new socket request
-                    in = new ObjectInputStream(client.getInputStream());
                     out = new ObjectOutputStream(client.getOutputStream());
+                    in = new ObjectInputStream(client.getInputStream());
                 } catch (IOException e) {
                   System.out.println("Read failed");
                   System.exit(-1);
@@ -165,9 +165,7 @@ public class FileServer {
     private void handleEvent(WatchedEvent event) {
         String path = event.getPath();
         EventType type = event.getType();
-        System.out.println("HandleFSEvent");
         if(path.equalsIgnoreCase(myPath)) {
-            System.out.println("Our paths match " + path);
             if (type == EventType.NodeDeleted) {
                 System.out.println(myPath + " deleted! Let's go!");       
                 determineBoss(); // try to become the boss
@@ -177,6 +175,8 @@ public class FileServer {
                 try{ Thread.sleep(5000); } catch (Exception e) {}
                 determineBoss(); // re-enable the watch
             }
+            
+            zkc.exists(path, watcher);
         }
     }
     
