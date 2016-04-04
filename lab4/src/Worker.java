@@ -47,7 +47,8 @@ public class Worker {
     private static final String fs_path = "/primary_fs";
     private static final String worker_path = "/workers";
     private static final String job_path = "/jobs";
-    private static final String my_path = null;
+    
+    private static String my_path = null;
     
     private static final int PORT_NO = 9002;
     
@@ -113,7 +114,7 @@ public class Worker {
                 stat = zkc.getZooKeeper().exists(worker_path, null);
             }
 
-            String my_path = zkc.getZooKeeper().create(worker_path + "/worker", null, acl,  CreateMode.EPHEMERAL_SEQUENTIAL);
+            my_path = zkc.getZooKeeper().create(worker_path + "/worker", null, acl,  CreateMode.EPHEMERAL_SEQUENTIAL);
         }catch(KeeperException e){
             System.err.println("[Worker] Keeper Exception Encountered");
             System.exit(-1);
@@ -126,45 +127,48 @@ public class Worker {
         stat = null;
         //Connected to Zk, let's lookup the IP of file server
         stat = zkc.exists(fs_path, fs_watcher);
-        if(null != stat){
-            //There's an instance of the primary file server.
-            try{
-                stat = null;
-                byte[] host_bytes = zkc.getZooKeeper().getData(fs_path, fs_watcher, stat);
-                
-                String host =  new String(host_bytes);
-                
-                System.out.println(host);
-
-                String [] ip_and_port = host.split(":");
-                
-                String ip = ip_and_port[0];
-                String port = ip_and_port[1];
-                
-                fs_socket = new Socket(ip, Integer.parseInt(port)); 
-                
-                fs_out = new ObjectOutputStream(fs_socket.getOutputStream());
-                fs_in = new ObjectInputStream(fs_socket.getInputStream());
-
-            }
-            catch(KeeperException e){
-                System.err.println("[Worker] Failed to get data from znode. Keeper Exception");
-                System.err.println(e.getMessage());
-                System.exit(-1);
-            }
-            catch(InterruptedException ie){
-                System.err.println("[Worker] Failed to get data from znode. Interrupted Exception");
-                System.err.println(ie.getMessage());
-                System.exit(-1);
-            }
-            catch(IOException ioe){
-                System.err.println("[Worker] Failed to create I/O streams.");
-                System.err.println(ioe.getMessage());
-                System.exit(-1);
-            }
-            //Keep checking if there are jobs and tasks available
-            jobChecker();
+        
+        while(null == stat){
+            stat = zkc.exists(fs_path, fs_watcher);
         }
+        
+        //There's an instance of the primary file server.
+        try{
+            stat = null;
+            byte[] host_bytes = zkc.getZooKeeper().getData(fs_path, fs_watcher, stat);
+
+            String host =  new String(host_bytes);
+
+            System.out.println(host);
+
+            String [] ip_and_port = host.split(":");
+
+            String ip = ip_and_port[0];
+            String port = ip_and_port[1];
+
+            fs_socket = new Socket(ip, Integer.parseInt(port)); 
+
+            fs_out = new ObjectOutputStream(fs_socket.getOutputStream());
+            fs_in = new ObjectInputStream(fs_socket.getInputStream());
+
+        }
+        catch(KeeperException e){
+            System.err.println("[Worker] Failed to get data from znode. Keeper Exception");
+            System.err.println(e.getMessage());
+            System.exit(-1);
+        }
+        catch(InterruptedException ie){
+            System.err.println("[Worker] Failed to get data from znode. Interrupted Exception");
+            System.err.println(ie.getMessage());
+            System.exit(-1);
+        }
+        catch(IOException ioe){
+            System.err.println("[Worker] Failed to create I/O streams.");
+            System.err.println(ioe.getMessage());
+            System.exit(-1);
+        }
+        //Keep checking if there are jobs and tasks available
+        jobChecker();
 
     }
     
@@ -195,19 +199,33 @@ public class Worker {
                         String task_path = null;
                         
                         for(int i = 0; i < jobChildren.size(); i++){
-                            taskList = zkc.getZooKeeper().getChildren(jobChildren.get(i), null, stat);
                             
-                            jnd = (JobNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(jobChildren.get(i), null, stat));
+                            String cjob_path = job_path + "/" + jobChildren.get(i);
+                            
+                            taskList = zkc.getZooKeeper().getChildren(cjob_path, null, stat);
+                            
+                            System.out.println(cjob_path);
+                            
+                            jnd = (JobNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(cjob_path, null, stat));
+                            
+                            System.out.println("I get here");
                             
                             if(taskList.size() == 0 || jnd.mStatus == JobNodeData.JOB_DONE){
+                                System.out.println("The Job is Done...or there are no tasks!");
                                 continue;
                             }
                             
                             for(int j = 0; j < taskList.size(); j++){
-                                task_path = taskList.get(j);
+                                task_path = job_path + "/" + jobChildren.get(i) + "/" + taskList.get(j);
+                                
+                                System.out.println(task_path);
+                                
                                 TaskNodeData tnd = (TaskNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(task_path, null, stat));
                                 
                                 if(tnd.mOwner == null){
+                                    
+                                    System.out.println("No Owner for task_path");
+                                    
                                     tnd.mOwner = my_path;
                                     
                                     //Set the owner on the znode appropriately
@@ -230,6 +248,8 @@ public class Worker {
                      
                         
                         PasswordTask task = new PasswordTask(passHash, partID);
+                        
+                        System.out.println(passHash + "----" + partID);
                         
                         //Go to file server and request a partition
                         assert(fs_socket != null);
@@ -315,8 +335,10 @@ public class Worker {
                 
                 fs_socket = new Socket(ip, Integer.getInteger(port)); 
                 
-                ObjectOutputStream out = new ObjectOutputStream(fs_socket.getOutputStream());
-                ObjectInputStream in = new ObjectInputStream(fs_socket.getInputStream());
+                fs_out = new ObjectOutputStream(fs_socket.getOutputStream());
+                fs_in = new ObjectInputStream(fs_socket.getInputStream());
+                
+                
 
             }
             catch(KeeperException e){
