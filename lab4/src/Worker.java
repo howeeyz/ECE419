@@ -10,6 +10,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -23,6 +25,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.ACL;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -42,7 +45,10 @@ public class Worker {
     
     //CONSTANTS
     private static final String fs_path = "/primary_fs";
-    private static final String my_path = "/worker";
+    private static final String worker_path = "/workers";
+    private static final String job_path = "/jobs";
+    private static final String my_path = null;
+    
     private static final int PORT_NO = 9002;
     
     private static String host = null;
@@ -51,12 +57,12 @@ public class Worker {
     private ZkConnector zkc = null;
     private Watcher fs_watcher;
     
+    static final List<ACL> acl = Ids.OPEN_ACL_UNSAFE;
+    
     //Socket member variables
     private Socket fs_socket = null;
     private Socket jt_socket = null;
     private ServerSocket serverSk = null;
-    private ObjectInputStream in = null;
-    private ObjectOutputStream out = null;
     private ObjectInputStream fs_in = null;
     private ObjectOutputStream fs_out = null;
     
@@ -93,12 +99,31 @@ public class Worker {
         Stat stat = null;
         
         String host_and_port = host + ":" + PORT_NO;
-        Code ret = zkc.create(my_path, host_and_port, CreateMode.EPHEMERAL_SEQUENTIAL);
-                
-        if (ret == Code.OK){
-                System.out.println("Created my worker znode");
+        
+        //THIS NEEDS TO CHANGE....CHECK IF IT EXISTS...THEN APPEND
+//        public String create(String path,
+//                     byte[] data,
+//                     List<ACL> acl,
+//                     CreateMode createMode)
+
+        try{
+            stat = zkc.getZooKeeper().exists(worker_path, null);
+
+            while(stat == null){
+                stat = zkc.getZooKeeper().exists(worker_path, null);
+            }
+
+            String my_path = zkc.getZooKeeper().create(worker_path + "/worker", null, acl,  CreateMode.EPHEMERAL_SEQUENTIAL);
+        }catch(KeeperException e){
+            System.err.println("[Worker] Keeper Exception Encountered");
+            System.exit(-1);
+        }catch(InterruptedException e){
+            System.err.println("[Worker] Interrupted Exception Encountered");
+            System.exit(-1);
         }
         
+        
+        stat = null;
         //Connected to Zk, let's lookup the IP of file server
         stat = zkc.exists(fs_path, fs_watcher);
         if(null != stat){
@@ -137,67 +162,110 @@ public class Worker {
                 System.err.println(ioe.getMessage());
                 System.exit(-1);
             }
-            //Accept Socket connection from Job Tracker Service.
-            acceptSocketConnection(host_and_port);
+            //Keep checking if there are jobs and tasks available
+            jobChecker();
         }
 
-        
     }
     
-    private void acceptSocketConnection(String hosts){
+    private void jobChecker(){
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                try{
-                    jt_socket = serverSk.accept();
-                }
-                catch(IOException e){
-                    System.err.println("[FileServer] Failed to accept a socket connection.");
-                    System.err.println(e.getMessage());
-                    System.exit(-1);
-                }
-
-                try{
-                    in = new ObjectInputStream(jt_socket.getInputStream());
-                    out = new ObjectOutputStream(jt_socket.getOutputStream());
-                } catch (IOException e) {
-                    System.out.println("Read failed");
-                    System.exit(-1);
-                }
 
                 while(true){
                      try{
-                        PasswordTask task = (PasswordTask) in.readObject();
+                        Stat stat = null;
+                         
                         
-                        //Uncomment if you want to test file server.
-                        //PasswordTask task = new PasswordTask(MD5Test.getHash("bl4h bl4h"), 0);
-                        if(task != null){
-                            //Go to file server and request a partition
-                            assert(fs_socket != null);
-                            fs_out.writeObject(task);
+                        String passHash = null;   //What hash am I checking?
+                        int partID = -1;
+                        
+                        JobNodeData jnd = null;
+                        
+                        List<String> jobChildren = zkc.getZooKeeper().getChildren(job_path, null, stat);
+                        
+                        if(jobChildren.size() == 0){
+                            continue;
+                        }
+                        
+                        Collections.sort(jobChildren);
+                        List<String> taskList;
+                        
+                        String task_path = null;
+                        
+                        for(int i = 0; i < jobChildren.size(); i++){
+                            taskList = zkc.getZooKeeper().getChildren(jobChildren.get(i), null, stat);
                             
-                            ArrayList<String> partition = null;
+                            jnd = (JobNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(jobChildren.get(i), null, stat));
                             
-                            while(partition == null){
-                               partition = (ArrayList<String>)fs_in.readObject(); 
+                            if(taskList.size() == 0 || jnd.mStatus == JobNodeData.JOB_DONE){
+                                continue;
                             }
                             
-                            //partition exists here.
-                            boolean found = false;
-                            for(String word : partition){
-                                String hash_word = MD5Test.getHash(word);
-                                if(hash_word.equals(task.getHashString())){
-                                    System.out.println("Word Found! " + word + " hashes to " + hash_word);
-                                    found = true;
-                                    out.writeObject(word);
+                            for(int j = 0; j < taskList.size(); j++){
+                                task_path = taskList.get(j);
+                                TaskNodeData tnd = (TaskNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(task_path, null, stat));
+                                
+                                if(tnd.mOwner == null){
+                                    tnd.mOwner = my_path;
+                                    
+                                    //Set the owner on the znode appropriately
+                                    stat = zkc.getZooKeeper().setData(my_path, SerializerHelper.serialize(tnd), -1);
+                                    
+                                    passHash = tnd.mPassHash;
+                                    partID = tnd.mPartID;
                                     break;
                                 }
+                                
                             }
-                            
-                            if(!found){
-                                System.out.println("Word Not Found!");
+                            if(partID != -1){
+                                break;
                             }
                         }
+                        
+                        if(partID == -1){
+                            continue;
+                        }
+                     
+                        
+                        PasswordTask task = new PasswordTask(passHash, partID);
+                        
+                        //Go to file server and request a partition
+                        assert(fs_socket != null);
+                        fs_out.writeObject(task);
+
+                        ArrayList<String> partition = null;
+
+                        while(partition == null){
+                           partition = (ArrayList<String>)fs_in.readObject(); 
+                        }
+
+                        //partition exists here.
+                        boolean found = false;
+                        for(String word : partition){
+                            String hash_word = MD5Test.getHash(word);
+                            if(hash_word.equals(task.getHashString())){
+                                System.out.println("Word Found! " + word + " hashes to " + hash_word);
+                                found = true;
+                                //Set the found stuff...
+                                
+                                jnd.mStatus = JobNodeData.JOB_DONE;
+                                jnd.mFound = true;
+                                jnd.mResultString = word;
+                                break;
+                            }
+                        }
+
+                        if(!found){
+                            //Set the not found stuff...
+                            System.out.println("Word Not Found!");
+                        }
+                        
+                        //Time to delete the task
+                        
+                        zkc.getZooKeeper().delete(task_path, -1);
+                        
                      }
                      catch(IOException e){
                         System.err.println("[Worker] Failed to read data from socket");
@@ -208,6 +276,16 @@ public class Worker {
                         System.err.println("[Worker] Class doesn't exist");
                         System.err.println(ce.getMessage());
                         System.exit(-1);
+                     }
+                     catch(KeeperException ke){
+                        System.err.println("[Worker] Keeper Exception!");
+                        System.err.println(ke.getMessage());
+                        System.exit(-1);
+                     }
+                     catch(InterruptedException ie){
+                        System.err.println("[Worker] Interrupted Exception!");
+                        System.err.println(ie.getMessage());
+                        System.exit(-1); 
                      }
                 }
             }
