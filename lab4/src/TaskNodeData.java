@@ -17,9 +17,9 @@ public class TaskNodeData implements Serializable {
     public static final int JOB_DONE = 1;
     
     
-    public static String mPassHash = null;   //What hash am I checking?
-    public static int mPartID = -1;
-    public static String mOwner = null;
+    public String mPassHash = null;   //What hash am I checking?
+    public int mPartID = -1;
+    public String mOwner = null;
     
     
     public TaskNodeData(String passHash, int partID){

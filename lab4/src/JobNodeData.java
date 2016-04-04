@@ -18,10 +18,10 @@ public class JobNodeData implements Serializable {
     public static final int JOB_ERROR = 3;
     
     
-    public static String mPassHash = null;   //What hash am I checking?
-    public static int mStatus = JOB_IN_PROGRESS;  //Is this job done?
-    public static boolean mFound = false;    //Did I find my result?
-    public static String mResultString = null;  //What was the cleartext result
+    public String mPassHash = null;   //What hash am I checking?
+    public int mStatus = JOB_IN_PROGRESS;  //Is this job done?
+    public boolean mFound = false;    //Did I find my result?
+    public String mResultString = null;  //What was the cleartext result
     
     
     public JobNodeData(String passHash){
