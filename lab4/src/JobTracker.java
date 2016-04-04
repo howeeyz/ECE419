@@ -244,7 +244,7 @@ public class JobTracker {
                                             //Job Is done and we beed to set status to DONE also.
                                             //Workers have gone through all tasks and did not find the word!
                                             jobNode.mStatus = JobNodeData.JOB_DONE;
-                                            zkc.getZooKeeper().setData(path, SerializerHelper.serialize(jobNode.mStatus), -1);
+                                            zkc.getZooKeeper().setData(path, SerializerHelper.serialize(jobNode), -1);
                                         }
                                     }
                                     packet.mStatus = jobNode.mStatus;

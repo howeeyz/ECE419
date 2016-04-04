@@ -41,7 +41,6 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 
 public class FileServer {
     private static String host = null;
-    private static final int PORT_NO = 9001; 
     
     private Queue<String> dictionary;
     private ArrayList<ArrayList<String>> allPartitions;
@@ -51,12 +50,6 @@ public class FileServer {
     
     private ZkConnector zkc;
     private Watcher watcher;
-    
-    //Socket connection variables
-    private ServerSocket serverSk = null;
-    private Socket client = null;
-    private ObjectInputStream in = null;
-    private ObjectOutputStream out = null;
     
     
     public FileServer(String hosts, String fileName){
@@ -104,11 +97,10 @@ public class FileServer {
         Stat stat = zkc.exists(myPath, watcher);
         if (stat == null) {              // znode doesn't exist; let's try creating it
             System.out.println("Creating " + myPath);
-            String host_and_port = host + ":" + PORT_NO;    //Serialize the host and port
-            System.out.println(host_and_port);
+
             Code ret = zkc.create(
                         myPath,         // Path of znode
-                        host_and_port,           //Pass in host information
+                        null,           //Pass in host information
                         CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL.
                         );
             if (ret == Code.OK){
@@ -119,52 +111,51 @@ public class FileServer {
     }
     
     private void acceptSocketConnection(){
-        try{
-            if(null == serverSk){
-                serverSk = new ServerSocket(PORT_NO);
-            }   
-        }
-        catch(IOException e){
-            System.err.println("[FileServer] Failed to listen on port " + PORT_NO);
-            System.err.println(e.getMessage());
-            System.exit(-1);
-        }
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
+                ObjectInputStream in = null;
+                ObjectOutputStream out = null;
                 try{
-                    client = serverSk.accept();
-                }
-                catch(IOException e){
-                    System.err.println("[FileServer] Failed to accept a socket connection.");
-                    System.err.println(e.getMessage());
-                    System.exit(-1);
-                }
-                try{
-                 in = new ObjectInputStream(client.getInputStream());
-                 out = new ObjectOutputStream(client.getOutputStream());
+                    ServerSocket serverSk = new ServerSocket(0);
+                    String host_and_port = host + ":" + serverSk.getLocalPort();    //Serialize the host and port
+                    System.out.println(host_and_port);
+                    zkc.getZooKeeper().setData(myPath, host_and_port.getBytes(), -1);
+                    Socket client = serverSk.accept();
+                    acceptSocketConnection();   //Start accepting a new socket request
+                    in = new ObjectInputStream(client.getInputStream());
+                    out = new ObjectOutputStream(client.getOutputStream());
                 } catch (IOException e) {
                   System.out.println("Read failed");
                   System.exit(-1);
                 }
+                catch(KeeperException e){
+                    System.err.println("[FileServer] ZooKeeper exception");
+                    System.err.println(e.getMessage());
+                    System.exit(-1);
+                }        
+                catch(InterruptedException e){
+                    System.err.println("[FileServer] Interrupted exception");
+                    System.err.println(e.getMessage());
+                    System.exit(-1);
+                }
 
                 while(true){
-                     try{
+                    try{
                         PasswordTask task =(PasswordTask) in.readObject();
 
                         ArrayList<String> partition = allPartitions.get(task.getPartID());
                         out.writeObject(partition);   //get the partition that the worker requested and send to them
-                     }
-                     catch(IOException e){
+                    }
+                    catch(IOException e){
                         System.err.println("[FileServer] Socket closed. Acception new one");
-                        acceptSocketConnection();
                         return;
-                     }
-                     catch(ClassNotFoundException e){
+                    }
+                    catch(ClassNotFoundException e){
                         System.err.println("[FileServer] Class not found");
                         System.err.println(e.getMessage());
                         System.exit(-1);
-                     }
+                    }
                 }
             }
         });
