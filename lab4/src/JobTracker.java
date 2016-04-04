@@ -13,6 +13,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.WatchedEvent;
@@ -40,6 +41,7 @@ public class JobTracker {
     Watcher primary_watcher = null;
     Watcher job_watcher = null;
     Watcher task_watcher = null;
+    Watcher workers_watcher = null;
     private static final String myPath = "/primary_jt";
     private static final String jobPath = "/jobs";
     private static final String workerPath = "/workers";
@@ -53,7 +55,11 @@ public class JobTracker {
     ObjectOutputStream out = null;  //Socket output stream; write replies
     
     //jobtracking members
-    HashMap<String, String> jobMap = null;
+    ConcurrentHashMap<String, String> jobMap = null;
+    ConcurrentHashMap<String, String> workersMap = null;
+    
+    
+    List<String> workersList = null;
     
     
     public JobTracker (String hosts){
@@ -64,7 +70,14 @@ public class JobTracker {
             System.out.println("Zookeeper connect "+ e.getMessage());
         }
         
-        jobMap = new HashMap<String, String>(); //Initialize hashmap
+        //Initialize hashmaps
+        jobMap = new ConcurrentHashMap<String, String>(); 
+        workersMap = new ConcurrentHashMap<String, String>();
+        
+        
+        //Initialize Workers List
+        workersList = new ArrayList<String>();
+        
         
         //At this point, zookeeper is connected
         
@@ -84,6 +97,20 @@ public class JobTracker {
             }
         };
         
+        workers_watcher = new Watcher() {
+            @Override
+            public void process(WatchedEvent event) {
+                handleWorkersEvent(event);
+            }
+        };
+        
+        task_watcher = new Watcher() {
+            @Override
+            public void process(WatchedEvent event) {
+                handleTaskEvent(event);
+            }
+        };
+        
         //Check if the /jobs path exists
         Stat job_stat = zkc.exists(jobPath, null);
         if(null == job_stat){
@@ -99,18 +126,32 @@ public class JobTracker {
         }
         
         //Check if the /workers path already exists
-        Stat worker_stat = zkc.exists(workerPath, null);
-        if(null == worker_stat){
-            System.out.println("Creating " + workerPath);
-            Code ret = zkc.create(
-                        workerPath,         // Path of znode
-                        null,           //Pass in host information
-                        CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL.
-                        );
-            if (ret == Code.OK){
-                System.out.println(workerPath + " znode created!");
+        try{
+            Stat worker_stat = zkc.exists(workerPath, null);
+            if(null == worker_stat){
+                System.out.println("Creating " + workerPath);
+                Code ret = zkc.create(
+                            workerPath,         // Path of znode
+                            null,           //Pass in host information
+                            CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL.
+                            );
+                if (ret == Code.OK){
+                    System.out.println(workerPath + " znode created!");
+                    workersList = zkc.getZooKeeper().getChildren(workerPath, workers_watcher);
+                }
             }
         }
+        catch(KeeperException e){
+            System.err.println("[JobTracker] ZooKeeper Exception");
+            System.err.println(e.getMessage());
+            System.exit(-1);
+        }
+        catch(InterruptedException e){
+            System.err.println("[JobTracker] Interrupted Exception");
+            System.err.println(e.getMessage());
+            System.exit(-1);
+        }
+
     }
     
     public void determinePrimary(){
@@ -232,6 +273,7 @@ public class JobTracker {
                                 TaskNodeData taskData = new TaskNodeData(packet.mPHash, i);
                                 String sequential_path = zkc.getZooKeeper().create(task_path, SerializerHelper.serialize(taskData), acl, CreateMode.PERSISTENT_SEQUENTIAL);
                                 System.out.println("Task Absolute path after zkc create: " + sequential_path);
+                                zkc.exists(task_path, task_watcher);    //Set a watcher to update workers hashMap
                             }
                             
                             jobMap.put(packet.mPHash, path);    //Insert new job into hashmap
@@ -286,8 +328,7 @@ public class JobTracker {
         }
     }
     
-        public void handleJobEvent(WatchedEvent event){
-        //Check if workers go down,
+    public void handleJobEvent(WatchedEvent event){
         //Get the updated group of workers.
         String path = event.getPath();
         EventType type = event.getType();
@@ -302,6 +343,114 @@ public class JobTracker {
                 determinePrimary(); // re-enable the watch
             }
         }
+    }
+    
+    public void handleWorkersEvent(WatchedEvent event) {
+         //Check the old list of workers with the new list of workers
+         //See if we lost any, meaning workers in the old list is no longer in the new list
+         //Find the worker in all tasks by querying all jobs and set the owner to null.
+         
+        String path = event.getPath();
+        EventType type = event.getType();
+
+        if(path.equalsIgnoreCase(workerPath) && type == Watcher.Event.EventType.NodeChildrenChanged){
+            try{
+                List<String> newWorkerList = zkc.getZooKeeper().getChildren(workerPath,
+                 workers_watcher);
+         
+                if(!newWorkerList.containsAll(workersList)){
+                    // There's a missing worker in the new worker list
+                    for(String worker : workersList){
+                        if(!newWorkerList.contains(worker)){
+                           //Check if worker exists in the hashmap
+                           // If it does, find the one task it was working on
+                           // If it exists and the missing worker is in fact the owner.
+                           // Set owner to null.
+
+                           if(workersMap.containsKey(worker)){
+                               String taskPath = workersMap.get(worker);
+
+                               if(null==taskPath){
+                                   workersMap.remove(worker);
+                                   continue;
+                               }
+
+                               Stat stat = zkc.exists(taskPath,  null);
+
+                               if(null != stat){
+                                   //The path exists with the task.
+                                   TaskNodeData taskData = (TaskNodeData)SerializerHelper.deserialize(zkc.getZooKeeper().getData(taskPath, null, stat));
+                                   if(taskData.mOwner.equals(worker)){
+                                       taskData.mOwner = null;
+                                   }
+
+                                   zkc.getZooKeeper().setData(taskPath, SerializerHelper.serialize(taskData), -1);
+                               }
+                           }   
+                       }
+                   }
+               }
+
+               workersList = newWorkerList;    //update the old workers list. 
+            }
+            catch(IOException e){
+              System.err.println("[JobTracker] I/O Exception");
+              System.err.println(e.getMessage());
+              System.exit(-1);
+            }
+            catch(ClassNotFoundException e){
+              System.err.println("[JobTracker] Class not found.");
+              System.err.println(e.getMessage());
+              System.exit(-1);
+            }
+            catch(KeeperException e){
+              System.err.println("[JobTracker] KeeperException");
+              System.err.println(e.getMessage());
+              System.exit(-1);
+            }
+            catch(InterruptedException e){
+              System.err.println("[JobTracker] InterruptedException");
+              System.err.println(e.getMessage());
+              System.exit(-1);
+            }
+        }
+         
+
+    }
+    
+    public void handleTaskEvent(WatchedEvent event){
+        //Get the updated group of workers.
+        String path = event.getPath();
+        EventType type = event.getType();
+        Stat stat = null;
+        try{
+            if (type == Watcher.Event.EventType.NodeDataChanged) {
+                TaskNodeData task = (TaskNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(path, task_watcher, stat));
+
+                workersMap.put(task.mOwner, path);
+            }            
+        }
+        catch(IOException e){
+          System.err.println("[JobTracker - Task Watcher] I/O Exception");
+          System.err.println(e.getMessage());
+          System.exit(-1);
+        }
+        catch(ClassNotFoundException e){
+          System.err.println("[JobTracker - Task Watcher] Class not found Exception");
+          System.err.println(e.getMessage());
+          System.exit(-1);
+        }
+        catch(KeeperException e){
+          System.err.println("[JobTracker - Task Watcher] KeeperException");
+          System.err.println(e.getMessage());
+          System.exit(-1);
+        }
+        catch(InterruptedException e){
+          System.err.println("[JobTracker - Task Watcher] InterruptedException");
+          System.err.println(e.getMessage());
+          System.exit(-1);
+        }
+
     }
     
     public static void main (String [] args){
