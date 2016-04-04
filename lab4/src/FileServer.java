@@ -148,7 +148,7 @@ public class FileServer {
                         out.writeObject(partition);   //get the partition that the worker requested and send to them
                     }
                     catch(IOException e){
-                        System.err.println("[FileServer] Socket closed. Acception new one");
+                        System.err.println("[FileServer] Socket closed. Accept new one");
                         return;
                     }
                     catch(ClassNotFoundException e){
@@ -166,6 +166,7 @@ public class FileServer {
     private void handleEvent(WatchedEvent event) {
         String path = event.getPath();
         EventType type = event.getType();
+        System.out.println("HandleFSEvent");
         if(path.equalsIgnoreCase(myPath)) {
             if (type == EventType.NodeDeleted) {
                 System.out.println(myPath + " deleted! Let's go!");       

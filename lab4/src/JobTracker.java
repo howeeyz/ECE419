@@ -30,7 +30,6 @@ import org.apache.zookeeper.data.ACL;
  */
 public class JobTracker {
     private static String host = null;     //JobTracker hostname
-    private static final int PORT_NO = 9003;   //JobTracker port
     
     //CONSTANTS
     private static final String JOB_STATUS = "status";
@@ -45,14 +44,6 @@ public class JobTracker {
     private static final String myPath = "/primary_jt";
     private static final String jobPath = "/jobs";
     private static final String workerPath = "/workers";
-    
-    
-    
-    //Socket members
-    ServerSocket serverSk = null;
-    Socket client = null;   //ClientDriver Socket
-    ObjectInputStream in = null;    //Socket input stream; receive requests
-    ObjectOutputStream out = null;  //Socket output stream; write replies
     
     //jobtracking members
     ConcurrentHashMap<String, String> jobMap = null;
@@ -159,12 +150,9 @@ public class JobTracker {
         assert(zkc != null);
         Stat stat = zkc.exists(myPath, primary_watcher);
         if(null == stat){              // znode doesn't exist; let's try creating it
-            System.out.println("Creating " + myPath);
-            String host_and_port = host + ":" + PORT_NO;    //Serialize the host and port
-            System.out.println(host_and_port);
             Code ret = zkc.create(
                         myPath,         // Path of znode
-                        host_and_port,           //Pass in host information
+                        null,           //Pass in host information
                         CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL.
                         );
             if (ret == Code.OK){
@@ -175,38 +163,38 @@ public class JobTracker {
     }
     
     public void acceptSocketConnection(){
-        //Create an instance of server socket and accept connection
-        try{
-            if(null == serverSk){
-                serverSk = new ServerSocket(PORT_NO);
-            }
-        }
-        catch(IOException e){
-            System.err.println("[JobTracker] Failed to listen on port " + PORT_NO);
-            System.err.println(e.getMessage());
-            System.exit(-1);
-        }
-        
         Thread t = new Thread (new Runnable() {
             @Override
             public void run() {
+                
+                ObjectInputStream in = null;
+                ObjectOutputStream out = null;
                 try{
-                    System.out.println("[JobTracker] Accepting connections on port " + PORT_NO);
-                    client = serverSk.accept();
+                    ServerSocket serverSk = new ServerSocket(0);
+                    String host_and_port = host + ":" + serverSk.getLocalPort();    //Serialize the host and port
+                    System.out.println(host_and_port);
+                    zkc.getZooKeeper().setData(myPath, host_and_port.getBytes(), -1);
+                    Socket client = serverSk.accept();
+                    acceptSocketConnection();   //Start accepting a new socket request
+                    in = new ObjectInputStream(client.getInputStream());
+                    out = new ObjectOutputStream(client.getOutputStream());
                 }
                 catch(IOException e){
                     System.err.println("[JobTracker] Failed to accept a socket connection.");
                     System.err.println(e.getMessage());
                     System.exit(-1);
                 }
-                try{
-                    in = new ObjectInputStream(client.getInputStream());
-                    out = new ObjectOutputStream(client.getOutputStream());
-                } catch (IOException e) {
-                    System.err.println(" [JobTracker] Failed to initialize I/O streams");
+                catch(KeeperException e){
+                    System.err.println("[JobTracker] ZooKeeper exception");
+                    System.err.println(e.getMessage());
+                    System.exit(-1);
+                }        
+                catch(InterruptedException e){
+                    System.err.println("[JobTracker] Interrupted exception");
+                    System.err.println(e.getMessage());
                     System.exit(-1);
                 }
-                
+
                 while(true){
                      try{
                         JPacket packet = null;
@@ -292,7 +280,6 @@ public class JobTracker {
                      catch(IOException e){
                         System.err.println("[JobTracker] Socket Closed");
                         System.err.println(e.getMessage());
-                        acceptSocketConnection();
                         return;
                      }
                      catch(ClassNotFoundException e){
