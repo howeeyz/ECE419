@@ -197,10 +197,10 @@ public class Worker {
                         List<String> taskList;
                         
                         String task_path = null;
-                        
+                        String cjob_path = null;
                         for(int i = 0; i < jobChildren.size(); i++){
                             
-                            String cjob_path = job_path + "/" + jobChildren.get(i);
+                            cjob_path = job_path + "/" + jobChildren.get(i);
                             
                             taskList = zkc.getZooKeeper().getChildren(cjob_path, null, stat);
                             
@@ -264,8 +264,9 @@ public class Worker {
                         //partition exists here.
                         boolean found = false;
                         for(String word : partition){
+                            System.out.println(word);
                             String hash_word = MD5Test.getHash(word);
-                            if(hash_word.equals(task.getHashString())){
+                            if(hash_word.equals(MD5Test.getHash(task.getHashString()))){
                                 System.out.println("Word Found! " + word + " hashes to " + hash_word);
                                 found = true;
                                 //Set the found stuff...
@@ -273,6 +274,8 @@ public class Worker {
                                 jnd.mStatus = JobNodeData.JOB_DONE;
                                 jnd.mFound = true;
                                 jnd.mResultString = word;
+                                
+                                stat = zkc.getZooKeeper().setData(cjob_path, SerializerHelper.serialize(jnd), -1);
                                 break;
                             }
                         }
