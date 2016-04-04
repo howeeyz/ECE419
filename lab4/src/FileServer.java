@@ -156,9 +156,9 @@ public class FileServer {
                         out.writeObject(partition);   //get the partition that the worker requested and send to them
                      }
                      catch(IOException e){
-                        System.err.println("[FileServer] Failed to read data from socket");
-                        System.err.println(e.getMessage());
-                        System.exit(-1);
+                        System.err.println("[FileServer] Socket closed. Acception new one");
+                        acceptSocketConnection();
+                        return;
                      }
                      catch(ClassNotFoundException e){
                         System.err.println("[FileServer] Class not found");

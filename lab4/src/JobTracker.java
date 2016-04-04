@@ -237,9 +237,16 @@ public class JobTracker {
                                     byte[] job_bytes = zkc.getZooKeeper().getData(path, null, stat);
                 
                                     JobNodeData jobNode =  (JobNodeData) SerializerHelper.deserialize(job_bytes);
-
-                                    System.out.println(jobNode.mPassHash);
-
+                                    
+                                    if(jobNode.mStatus == JobNodeData.JOB_IN_PROGRESS){
+                                        List<String> taskList = zkc.getZooKeeper().getChildren(path,null);
+                                        if(taskList.isEmpty()){
+                                            //Job Is done and we beed to set status to DONE also.
+                                            //Workers have gone through all tasks and did not find the word!
+                                            jobNode.mStatus = JobNodeData.JOB_DONE;
+                                            zkc.getZooKeeper().setData(path, SerializerHelper.serialize(jobNode.mStatus), -1);
+                                        }
+                                    }
                                     packet.mStatus = jobNode.mStatus;
                                     packet.mFound = jobNode.mFound;
                                     packet.mResultString = jobNode.mResultString;
