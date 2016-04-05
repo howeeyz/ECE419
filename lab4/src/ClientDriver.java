@@ -3,6 +3,7 @@
  * @author zhangh55
  */
 
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -10,6 +11,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
@@ -20,18 +22,22 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.ACL;
 
 public class ClientDriver {
     
     private static String host = null;
-    private final String  jt_path = "/primary_jt";
+    private final String jt_path = "/primary_jt";
+    private final String request_path = "/requests";
+    
+    private String my_request_path = null;
     
     private ZkConnector zkc;
-    private Watcher jt_watcher;
+    private Watcher request_watcher;
     
-    private Socket jt_socket = null;
-    private ObjectInputStream in = null;
-    private ObjectOutputStream out = null;
+    private boolean processed = false;
+    
+    static final List<ACL> acl = Ids.OPEN_ACL_UNSAFE;
     
     public ClientDriver (String hosts, String type, String pHash) throws IOException, ClassNotFoundException{
         
@@ -53,70 +59,45 @@ public class ClientDriver {
             System.out.println("[Client] Zookeeper connect "+ e.getMessage());
         }
         
-        jt_watcher = new Watcher() { // Anonymous Watcher
+        request_watcher = new Watcher() {
             @Override
             public void process(WatchedEvent event) {
-                handleCDEvent(event);
+                handleRequestEvent(event);
             } 
         };
                 
-        //Connected to Zk, let's lookup the IP of the job tracker
-        Stat stat = zkc.exists(jt_path, jt_watcher);
-        if(null != stat){
-            //There's an instance of the primary file server.
-            try{
-                stat = null;
-                byte[] host_bytes = zkc.getZooKeeper().getData(jt_path, jt_watcher, stat);
-                
-                String host =  new String(host_bytes);
-                
-                System.out.println(host);
+        Stat stat = null;
+        
+        stat = zkc.exists(request_path, null);
+        
+        while(stat == null){
+            stat = zkc.exists(request_path, null);
+        }
+        
+        JPacket jpIn = null;
+        
+        try{
+            my_request_path = zkc.getZooKeeper().create(request_path + "/request", SerializerHelper.serialize(jp), acl, CreateMode.EPHEMERAL_SEQUENTIAL);
 
-                String [] ip_and_port = host.split(":");
-                
-                String ip = ip_and_port[0];
-                String port = ip_and_port[1];
-              
-                jt_socket = new Socket(ip, Integer.parseInt(port)); 
-                
-                System.out.println("Socket has been made...");
-                
-                out = new ObjectOutputStream(jt_socket.getOutputStream());
-                in = new ObjectInputStream(jt_socket.getInputStream());
+            stat = zkc.exists(my_request_path, request_watcher);
 
+            while(processed == false){
+                ;
             }
-            catch(KeeperException e){
-                System.err.println("[Client] Failed to get data from znode. Keeper Exception");
-                System.err.println(e.getMessage());
-                System.exit(-1);
-            }
-            catch(InterruptedException ie){
-                System.err.println("[Client] Failed to get data from znode. Interrupted Exception");
-                System.err.println(ie.getMessage());
-                System.exit(-1);
-            }
-            catch(IOException ioe){
-                System.err.println("[Client] Failed to create I/O streams.");
-                System.err.println(ioe.getMessage());
-                System.exit(-1);
-            }
+
+            jpIn = (JPacket) SerializerHelper.deserialize(zkc.getZooKeeper().getData(my_request_path, null, stat));
         }
-        else{
-            System.out.println("stat is null");
+        catch(KeeperException ke){
+            System.err.println("[Client Driver] Keeper Exception!");
+            System.err.println(ke.getMessage());
+            System.exit(-1);
         }
-        
-        out.writeObject(jp);
-        
-        //Need to take in the data
-        
-        JPacket jpIn;
-        jpIn = (JPacket) in.readObject();
-        
-        while(null == jpIn){
-            jpIn = (JPacket) in.readObject();
-        }
-        
-        
+        catch(InterruptedException ie){
+            System.err.println("[Client Driver] Interrupted Exception!");
+            System.err.println(ie.getMessage());
+            System.exit(-1); 
+         }
+
         if(jpIn.mStatus == JPacket.DONE){
             if(jpIn.mFound == true)
                 System.out.println("Job Complete. Word has been found");
@@ -133,8 +114,6 @@ public class ClientDriver {
             System.out.println("ERROR: No Status");
         }
 
-
-        
     }
     
     public static void main(String args[]) throws IOException, ClassNotFoundException{
@@ -156,51 +135,14 @@ public class ClientDriver {
 
     }
     
-    private void handleCDEvent(WatchedEvent event) {
-        if(event.getType() != Watcher.Event.EventType.NodeCreated){
+    private void handleRequestEvent(WatchedEvent event) {
+        if(event.getType() != Watcher.Event.EventType.NodeDataChanged){
+            System.out.println("We should never ever ever get here!!!!!");
             return;
         }
         
-        System.out.println("I'm handling a client driver event!");
-        
-        Stat stat = null;
-        
-        stat = zkc.exists(jt_path, jt_watcher);
-        
-        if(null != stat){
-            //There's an instance of the primary file server.
-            try{
-                byte[] host_bytes = zkc.getZooKeeper().getData(jt_path, jt_watcher, stat);
-                
-                String host =  host_bytes.toString();
-
-                String [] ip_and_port = host.split(":");
-                
-                String ip = ip_and_port[0];
-                String port = ip_and_port[1];
-                
-                
-                jt_socket = new Socket(ip, Integer.getInteger(port)); 
-                
-                out = new ObjectOutputStream(jt_socket.getOutputStream());
-                in = new ObjectInputStream(jt_socket.getInputStream());
-                
-                return;
-            }
-            catch(KeeperException e){
-                System.err.println("[Worker] Failed to get data from znode. Keeper Exception");
-                System.err.println(e.getMessage());
-            }
-            catch(InterruptedException ie){
-                System.err.println("[Worker] Failed to get data from znode. Interrupted Exception");
-                System.err.println(ie.getMessage());
-                System.exit(-1);
-            }
-            catch(IOException ioe){
-                System.err.println("[Worker] Failed to create I/O streams.");
-                System.err.println(ioe.getMessage());
-                System.exit(-1);
-            }
-        }
+        processed = true;
+        return;
     }
+    
 }
