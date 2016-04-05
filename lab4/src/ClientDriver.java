@@ -62,7 +62,9 @@ public class ClientDriver {
         request_watcher = new Watcher() {
             @Override
             public void process(WatchedEvent event) {
-                handleRequestEvent(event);
+                synchronized (this) {
+                    processed = handleRequestEvent(event);
+                }
             } 
         };
                 
@@ -81,10 +83,13 @@ public class ClientDriver {
 
             stat = zkc.exists(my_request_path, request_watcher);
 
-            while(processed == false){
-                ;
+            System.out.println("Spin spin spin");
+            while(!processed){
+                System.out.println(processed);
             }
 
+            System.out.println("Out of the processed loop!!!");
+            
             jpIn = (JPacket) SerializerHelper.deserialize(zkc.getZooKeeper().getData(my_request_path, null, stat));
         }
         catch(KeeperException ke){
@@ -135,14 +140,17 @@ public class ClientDriver {
 
     }
     
-    private void handleRequestEvent(WatchedEvent event) {
+    private boolean handleRequestEvent(WatchedEvent event) {
         if(event.getType() != Watcher.Event.EventType.NodeDataChanged){
             System.out.println("We should never ever ever get here!!!!!");
-            return;
+            Stat stat = zkc.exists(my_request_path, request_watcher);
+            return false;
         }
         
-        processed = true;
-        return;
+        System.out.println("Setting Processed to True!!!");
+        
+        
+        return true;
     }
     
 }
