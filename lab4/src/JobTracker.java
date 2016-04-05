@@ -165,9 +165,6 @@ public class JobTracker {
                 System.out.println(requestPath + " znode created!");
             }
         }
-        
-        //Initialize hashmaps
-        initializeHashMaps();
     }
     
     public void determinePrimary(){
@@ -182,6 +179,8 @@ public class JobTracker {
                         );
             if (ret == Code.OK){
                 System.out.println("I'm primary JobTracker!");
+                //Initialize hashmaps
+                initializeHashMaps();
                 acceptSocketConnection();
             }
         }
@@ -204,15 +203,18 @@ public class JobTracker {
                             absolute_request_path = requestPath + "/" + request;
                             byte[] req_bytes = zkc.getZooKeeper().getData(requestPath + "/" + request, null, stat);
                             packet = (JPacket) SerializerHelper.deserialize(req_bytes);
-                            if(packet.mStatus == -1){
+                            if(null == packet || packet.mStatus == -1){
                                 break;
                             }
                         }
-                        
+                        if(null == packet){
+                           continue; 
+                        }
                         System.out.println(packet.mPHash);
                         if(packet.mType == JPacket.STATUS){
                             //If the client is requesting a status, check if the current
                             //job request 
+                            
                             if(jobMap.containsKey(packet.mPHash)){
                                 //Check the progress
                                 String path = jobMap.get(packet.mPHash);
@@ -302,7 +304,7 @@ public class JobTracker {
                      catch(KeeperException e){
                         System.err.println("[JobTracker] KeeperException");
                         System.err.println(e.getMessage());
-                        System.exit(-1);
+                        continue;
                      }
                      catch(InterruptedException e){
                         System.err.println("[JobTracker] InterruptedException");
@@ -381,6 +383,8 @@ public class JobTracker {
                 try{ Thread.sleep(5000); } catch (Exception e) {}
                 determinePrimary(); // re-enable the watch
             }
+            
+            zkc.exists(path, primary_watcher);
         }
     }
     
