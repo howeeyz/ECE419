@@ -519,7 +519,7 @@ public class JobTracker {
         catch(KeeperException e){
           System.err.println("[JobTracker - Task Watcher] KeeperException");
           System.err.println(e.getMessage());
-          System.exit(-1);
+          return;
         }
         catch(InterruptedException e){
           System.err.println("[JobTracker - Task Watcher] InterruptedException");

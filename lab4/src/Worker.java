@@ -167,7 +167,7 @@ public class Worker {
         catch(KeeperException e){
             System.err.println("[Worker] Failed to get data from znode. Keeper Exception");
             System.err.println(e.getMessage());
-            System.exit(-1);
+            return null;
         }
         catch(InterruptedException ie){
             System.err.println("[Worker] Failed to get data from znode. Interrupted Exception");
