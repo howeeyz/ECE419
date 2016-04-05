@@ -12,6 +12,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
@@ -35,13 +37,15 @@ public class ClientDriver {
     private ZkConnector zkc;
     private Watcher request_watcher;
     
-    private boolean processed = false;
+    private LinkedBlockingQueue<String> isDone = null;
     
     static final List<ACL> acl = Ids.OPEN_ACL_UNSAFE;
     
     public ClientDriver (String hosts, String type, String pHash) throws IOException, ClassNotFoundException{
         
         int packetType;
+        
+        isDone = new LinkedBlockingQueue<String>();
         
         if(type.equals("job"))
             packetType = JPacket.JOB;
@@ -63,7 +67,7 @@ public class ClientDriver {
             @Override
             public void process(WatchedEvent event) {
                 synchronized (this) {
-                    processed = handleRequestEvent(event);
+                    handleRequestEvent(event);
                 }
             } 
         };
@@ -83,12 +87,9 @@ public class ClientDriver {
 
             stat = zkc.exists(my_request_path, request_watcher);
 
-            System.out.println("Spin spin spin");
-            while(!processed){
-                System.out.println(processed);
+            while(isDone.isEmpty()){
+                ;
             }
-
-            System.out.println("Out of the processed loop!!!");
             
             jpIn = (JPacket) SerializerHelper.deserialize(zkc.getZooKeeper().getData(my_request_path, null, stat));
         }
@@ -140,17 +141,17 @@ public class ClientDriver {
 
     }
     
-    private boolean handleRequestEvent(WatchedEvent event) {
+    private void handleRequestEvent(WatchedEvent event) {
         if(event.getType() != Watcher.Event.EventType.NodeDataChanged){
             System.out.println("We should never ever ever get here!!!!!");
             Stat stat = zkc.exists(my_request_path, request_watcher);
-            return false;
+            return;
         }
         
-        System.out.println("Setting Processed to True!!!");
+        isDone.add("Done");
         
         
-        return true;
+        return;
     }
     
 }
