@@ -106,9 +106,9 @@ public class ClientDriver {
 
         if(jpIn.mStatus == JPacket.DONE){
             if(jpIn.mFound == true)
-                System.out.println("Job Complete. Word has been found");
+                System.out.println("Job Complete. Password has been found: " + jpIn.mResultString);
             else
-                System.out.println("Job Complete. Word has not been found");
+                System.out.println("Job Complete. Password has not been found");
         }
         else if(jpIn.mStatus == JPacket.IN_PROGRESS){
             System.out.println("Job is in progress.");
