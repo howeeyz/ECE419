@@ -113,14 +113,14 @@ public class JobTracker {
         //Check if the /jobs path exists
         Stat job_stat = zkc.exists(jobPath, null);
         if(null == job_stat){
-            System.out.println("Creating " + jobPath);
+            //System.out.println("Creating " + jobPath);
             Code ret = zkc.create(
                         jobPath,         // Path of znode
                         null,           //Pass in host information
                         CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL.
                         );
             if (ret == Code.OK){
-                System.out.println(jobPath + " znode created!");
+                //System.out.println(jobPath + " znode created!");
             }
         }
         
@@ -128,14 +128,14 @@ public class JobTracker {
         try{
             Stat worker_stat = zkc.exists(workerPath, null);
             if(null == worker_stat){
-                System.out.println("Creating " + workerPath);
+                //System.out.println("Creating " + workerPath);
                 Code ret = zkc.create(
                             workerPath,         // Path of znode
                             null,           //Pass in host information
                             CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL.
                             );
                 if (ret == Code.OK){
-                    System.out.println(workerPath + " znode created!");
+                    //System.out.println(workerPath + " znode created!");
                 }
             }
             //register initial watchers
@@ -155,14 +155,14 @@ public class JobTracker {
         //Check if the request node exists
         Stat request_stat = zkc.exists(requestPath, request_watcher);
         if(null == request_stat){
-            System.out.println("Creating " + requestPath);
+            //System.out.println("Creating " + requestPath);
             Code ret = zkc.create(
                         requestPath,         // Path of znode
                         null,           //Pass in host information
                         CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL.
                         );
             if (ret == Code.OK){
-                System.out.println(requestPath + " znode created!");
+               //System.out.println(requestPath + " znode created!");
             }
         }
     }
@@ -178,7 +178,7 @@ public class JobTracker {
                         CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL.
                         );
             if (ret == Code.OK){
-                System.out.println("I'm primary JobTracker!");
+                //System.out.println("I'm primary JobTracker!");
                 //Initialize hashmaps
                 initializeHashMaps();
                 acceptSocketConnection();
@@ -210,7 +210,7 @@ public class JobTracker {
                         if(null == packet){
                            continue; 
                         }
-                        System.out.println(packet.mPHash);
+                        //System.out.println(packet.mPHash);
                         if(packet.mType == JPacket.STATUS){
                             //If the client is requesting a status, check if the current
                             //job request 
@@ -266,11 +266,11 @@ public class JobTracker {
                                 continue;
                             }
                             String new_job_path = jobPath + "/" + "job";
-                            System.out.println("New absolute path of job: " + new_job_path);
+                            //System.out.println("New absolute path of job: " + new_job_path);
                             JobNodeData data = new JobNodeData(packet.mPHash);
                             List<ACL> acl = Ids.OPEN_ACL_UNSAFE;
                             String path = zkc.getZooKeeper().create(new_job_path, SerializerHelper.serialize(data), acl, CreateMode.PERSISTENT_SEQUENTIAL);
-                            System.out.println("Absolute path after zkc create: " + path);
+                            //System.out.println("Absolute path after zkc create: " + path);
                             
                             //Create Tasks.
                             
@@ -279,7 +279,7 @@ public class JobTracker {
                                 String task_path = path + "/task";
                                 TaskNodeData taskData = new TaskNodeData(packet.mPHash, i);
                                 String sequential_path = zkc.getZooKeeper().create(task_path, SerializerHelper.serialize(taskData), acl, CreateMode.PERSISTENT_SEQUENTIAL);
-                                System.out.println("Task Absolute path after zkc create: " + sequential_path);
+                                //System.out.println("Task Absolute path after zkc create: " + sequential_path);
                                 zkc.exists(sequential_path, task_watcher);    //Set a watcher to update workers hashMap
                             }
                             
@@ -302,8 +302,8 @@ public class JobTracker {
                         System.exit(-1);
                      }
                      catch(KeeperException e){
-                        System.err.println("[JobTracker] KeeperException");
-                        System.err.println(e.getMessage());
+                        //System.err.println("[JobTracker] KeeperException");
+                        //System.err.println(e.getMessage());
                         continue;
                      }
                      catch(InterruptedException e){
@@ -323,7 +323,7 @@ public class JobTracker {
         assert(jobMap != null && jobMap.isEmpty());
         
         
-        System.out.println("Initializing Hash Maps");
+        //System.out.println("Initializing Hash Maps");
         
         try{
             String absolutePath = jobPath; //Start with the jobPath
@@ -375,11 +375,11 @@ public class JobTracker {
         EventType type = event.getType();
         if(path.equalsIgnoreCase(myPath)) {
             if (type == EventType.NodeDeleted) {
-                System.out.println(myPath + " deleted! Let's go!");       
+                //System.out.println(myPath + " deleted! Let's go!");       
                 determinePrimary(); // try to become the boss
             }
             if (type == EventType.NodeCreated) {
-                System.out.println(myPath + " created!");       
+                //System.out.println(myPath + " created!");       
                 try{ Thread.sleep(5000); } catch (Exception e) {}
                 determinePrimary(); // re-enable the watch
             }
@@ -394,11 +394,11 @@ public class JobTracker {
         EventType type = event.getType();
         if(path.equalsIgnoreCase(myPath)) {
             if (type == EventType.NodeDeleted) {
-                System.out.println(myPath + " deleted! Let's go!");       
+                //System.out.println(myPath + " deleted! Let's go!");       
                 determinePrimary(); // try to become the boss
             }
             if (type == EventType.NodeCreated) {
-                System.out.println(myPath + " created!");       
+                //System.out.println(myPath + " created!");       
                 try{ Thread.sleep(5000); } catch (Exception e) {}
                 determinePrimary(); // re-enable the watch
             }
@@ -413,8 +413,8 @@ public class JobTracker {
         String path = event.getPath();
         EventType type = event.getType();
         
-        System.out.println(path);
-        System.out.println(type);
+        //System.out.println(path);
+        //System.out.println(type);
 
         if(path.equalsIgnoreCase(workerPath) && type == Watcher.Event.EventType.NodeChildrenChanged){
             try{
@@ -496,7 +496,7 @@ public class JobTracker {
             if (type == Watcher.Event.EventType.NodeDataChanged) {
                 TaskNodeData task = (TaskNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(path, task_watcher, stat));
                 
-                System.out.println(task.mOwner);
+                //System.out.println(task.mOwner);
 
                 if(workersMap.contains(task.mOwner)){
                     workersMap.replace(task.mOwner, path);

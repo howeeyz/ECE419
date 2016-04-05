@@ -62,7 +62,7 @@ public class FileServer {
         try {
             zkc.connect(hosts);
         } catch(Exception e) {
-            System.out.println("Zookeeper connect "+ e.getMessage());
+            System.err.println("Zookeeper connect "+ e.getMessage());
         }
  
         try{
@@ -95,7 +95,7 @@ public class FileServer {
     private void determineBoss() {
         Stat stat = zkc.exists(myPath, watcher);
         if (stat == null) {              // znode doesn't exist; let's try creating it
-            System.out.println("Creating " + myPath);
+            //System.out.println("Creating " + myPath);
 
             Code ret = zkc.create(
                         myPath,         // Path of znode
@@ -103,7 +103,7 @@ public class FileServer {
                         CreateMode.EPHEMERAL   // Znode type, set to EPHEMERAL.
                         );
             if (ret == Code.OK){
-                System.out.println("I'm primary!");
+                //System.out.println("I'm primary!");
                 acceptSocketConnection();
             }
         } 
@@ -118,7 +118,7 @@ public class FileServer {
                 try{
                     ServerSocket serverSk = new ServerSocket(0);
                     String host_and_port = host + ":" + serverSk.getLocalPort();    //Serialize the host and port
-                    System.out.println(host_and_port);
+                    //System.out.println(host_and_port);
                     zkc.getZooKeeper().setData(myPath, host_and_port.getBytes(), -1);
                     Socket client = serverSk.accept();
                     acceptSocketConnection();   //Start accepting a new socket request
@@ -167,11 +167,11 @@ public class FileServer {
         EventType type = event.getType();
         if(path.equalsIgnoreCase(myPath)) {
             if (type == EventType.NodeDeleted) {
-                System.out.println(myPath + " deleted! Let's go!");       
+                //System.out.println(myPath + " deleted! Let's go!");       
                 determineBoss(); // try to become the boss
             }
             if (type == EventType.NodeCreated) {
-                System.out.println(myPath + " created!");       
+                //System.out.println(myPath + " created!");       
                 try{ Thread.sleep(5000); } catch (Exception e) {}
                 determineBoss(); // re-enable the watch
             }

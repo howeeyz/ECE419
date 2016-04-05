@@ -98,7 +98,7 @@ public class Worker {
             System.exit(-1);
         }
         
-        System.out.println("Worker Node created");
+        //System.out.println("Worker Node created");
         
         stat = null;
         //Connected to Zk, let's lookup the IP of file server
@@ -110,7 +110,7 @@ public class Worker {
         
         fsDown = false;
         
-        System.out.println("FS Node created");
+        //System.out.println("FS Node created");
        
         //fsConnect();
        
@@ -131,7 +131,7 @@ public class Worker {
             }
             String host =  new String(host_bytes);
 
-            System.out.println(host);
+            //System.out.println(host);
 
             String [] ip_and_port = host.split(":");
 
@@ -139,14 +139,14 @@ public class Worker {
             String port = ip_and_port[1];
 
             Socket fs_socket = new Socket(ip, Integer.parseInt(port)); 
-            System.out.println("Created the sockets");
+            //System.out.println("Created the sockets");
             ObjectOutputStream fs_out = new ObjectOutputStream(fs_socket.getOutputStream());
-            System.out.println("Created output stream");
+            //System.out.println("Created output stream");
             ObjectInputStream fs_in = new ObjectInputStream(fs_socket.getInputStream());
-            System.out.println("Created input stream");
+            //System.out.println("Created input stream");
 
             
-            System.out.println("Created the sockets, the input and output streams");
+            //System.out.println("Created the sockets, the input and output streams");
             
             //Send over the partition ID
 
@@ -175,13 +175,14 @@ public class Worker {
             System.exit(-1);
         }
         catch(IOException ioe){
-            System.err.println("[Worker] Failed to create I/O streams.");
-            System.err.println(ioe.getMessage());
+            //System.err.println("[Worker] Failed to create I/O streams.");
+            //System.err.println(ioe.getMessage());
             return null;
         }
         catch(ClassNotFoundException cnf){
             System.err.println("[Worker] ClassNotFound");
             System.err.println(cnf.getMessage());
+            System.exit(-1);
         }
 
         return partition;
@@ -233,7 +234,7 @@ public class Worker {
                             for(int j = 0; j < taskList.size(); j++){
                                 task_path = cjob_path + "/" + taskList.get(j);
                                 
-                                System.out.println(task_path);
+                                //System.out.println(task_path);
                                 
                                 TaskNodeData tnd = (TaskNodeData) SerializerHelper.deserialize(zkc.getZooKeeper().getData(task_path, null, stat));
                                 
@@ -261,7 +262,7 @@ public class Worker {
                      
                         PasswordTask task = new PasswordTask(passHash, partID);
                         
-                        System.out.println(passHash + "----" + partID);
+                        //System.out.println(passHash + "----" + partID);
                         
                         while(fsDown){
                             Thread.sleep(randInt(1000, 5000));//spin
@@ -289,13 +290,7 @@ public class Worker {
                                 stat = zkc.getZooKeeper().setData(cjob_path, SerializerHelper.serialize(jnd), -1);
                                 break;
                             }
-                        }
-
-                        if(!found){
-                            //Set the not found stuff...
-                            System.out.println("Word Not Found!");
-                        }
-                        
+                        }                       
                         //Time to delete the task
                         stat = zkc.exists(task_path, null);
                         
@@ -315,8 +310,8 @@ public class Worker {
                         System.exit(-1);
                      }
                      catch(KeeperException ke){
-                        System.err.println("[Worker] Keeper Exception!");
-                        System.err.println(ke.getMessage());
+                        //System.err.println("[Worker] Keeper Exception!");
+                        //System.err.println(ke.getMessage());
                         continue;
                      }
                      catch(InterruptedException ie){
@@ -335,7 +330,7 @@ public class Worker {
         //Connected to Zk, let's lookup the IP of file server
       
         if(event.getType() == Watcher.Event.EventType.NodeDeleted){
-            System.out.println("Setting fsDown to true!");
+            //System.out.println("Setting fsDown to true!");
             fsDown = true;
             zkc.exists(fs_path, fs_watcher);
             return;
@@ -345,10 +340,10 @@ public class Worker {
             zkc.exists(fs_path, fs_watcher);
             return;
         }
-        System.out.println("Setting fsDown to false!");
+        //System.out.println("Setting fsDown to false!");
         fsDown = false;
         
-        System.out.println("Node created watcher event");
+        //System.out.println("Node created watcher event");
         Stat stat = null;
         
         stat = zkc.exists(fs_path, null);
