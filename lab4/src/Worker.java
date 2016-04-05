@@ -277,7 +277,7 @@ public class Worker {
                         boolean found = false;
                         for(String word : partition){
                             String hash_word = MD5Test.getHash(word);
-                            if(hash_word.equals(MD5Test.getHash(task.getHashString()))){
+                            if(hash_word.equals(task.getHashString())){
                                 System.out.println("Word Found! " + word + " hashes to " + hash_word);
                                 found = true;
                                 //Set the found stuff...
