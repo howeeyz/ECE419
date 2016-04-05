@@ -41,9 +41,13 @@ public class JobTracker {
     Watcher job_watcher = null;
     Watcher task_watcher = null;
     Watcher workers_watcher = null;
+    Watcher request_watcher = null;
+    
+    
     private static final String myPath = "/primary_jt";
     private static final String jobPath = "/jobs";
     private static final String workerPath = "/workers";
+    private static final String requestPath = "/requests";
     
     //jobtracking members
     ConcurrentHashMap<String, String> jobMap = null;
@@ -51,7 +55,6 @@ public class JobTracker {
     
     
     List<String> workersList = null;
-    
     
     public JobTracker (String hosts){
        zkc = new ZkConnector();
@@ -67,7 +70,6 @@ public class JobTracker {
         
         //Initialize Workers List
         workersList = new ArrayList<String>();
-        
         
         //At this point, zookeeper is connected
         
@@ -100,6 +102,13 @@ public class JobTracker {
                 handleTaskEvent(event);
             }
         };
+        
+        request_watcher = new Watcher() {
+            @Override
+            public void process (WatchedEvent event) {
+                handleRequestEvent(event);
+            }
+        };      
         
         //Check if the /jobs path exists
         Stat job_stat = zkc.exists(jobPath, null);
@@ -143,8 +152,22 @@ public class JobTracker {
             System.exit(-1);
         }
         
-        //Initialize the worker hashMap
-
+        //Check if the request node exists
+        Stat request_stat = zkc.exists(requestPath, request_watcher);
+        if(null == request_stat){
+            System.out.println("Creating " + requestPath);
+            Code ret = zkc.create(
+                        requestPath,         // Path of znode
+                        null,           //Pass in host information
+                        CreateMode.PERSISTENT   // Znode type, set to EPHEMERAL.
+                        );
+            if (ret == Code.OK){
+                System.out.println(requestPath + " znode created!");
+            }
+        }
+        
+        //Initialize hashmaps
+        initializeHashMaps();
     }
     
     public void determinePrimary(){
@@ -168,43 +191,24 @@ public class JobTracker {
         Thread t = new Thread (new Runnable() {
             @Override
             public void run() {
-                
-                ObjectInputStream in = null;
-                ObjectOutputStream out = null;
-                try{
-                    ServerSocket serverSk = new ServerSocket(0);
-                    String host_and_port = host + ":" + serverSk.getLocalPort();    //Serialize the host and port
-                    System.out.println(host_and_port);
-                    zkc.getZooKeeper().setData(myPath, host_and_port.getBytes(), -1);
-                    Socket client = serverSk.accept();
-                    acceptSocketConnection();   //Start accepting a new socket request
-                    in = new ObjectInputStream(client.getInputStream());
-                    out = new ObjectOutputStream(client.getOutputStream());
-                }
-                catch(IOException e){
-                    System.err.println("[JobTracker] Failed to accept a socket connection.");
-                    System.err.println(e.getMessage());
-                    System.exit(-1);
-                }
-                catch(KeeperException e){
-                    System.err.println("[JobTracker] ZooKeeper exception");
-                    System.err.println(e.getMessage());
-                    System.exit(-1);
-                }        
-                catch(InterruptedException e){
-                    System.err.println("[JobTracker] Interrupted exception");
-                    System.err.println(e.getMessage());
-                    System.exit(-1);
-                }
-
                 while(true){
                      try{
                         JPacket packet = null;
-                        while(packet == null){
-                            packet = (JPacket) in.readObject();
+                        
+                        //Get a list of requests
+                        List<String> requests = zkc.getZooKeeper().getChildren(requestPath, null);
+                        Stat stat = null;
+                        
+                        String absolute_request_path = null;
+                        for(String request : requests){
+                            absolute_request_path = requestPath + "/" + request;
+                            byte[] req_bytes = zkc.getZooKeeper().getData(requestPath + "/" + request, null, stat);
+                            packet = (JPacket) SerializerHelper.deserialize(req_bytes);
+                            if(packet.mStatus == -1){
+                                break;
+                            }
                         }
                         
-                        System.out.println("Successfully read a packet!");
                         System.out.println(packet.mPHash);
                         if(packet.mType == JPacket.STATUS){
                             //If the client is requesting a status, check if the current
@@ -215,7 +219,7 @@ public class JobTracker {
                                 
                                 assert(zkc != null);
                                 
-                                Stat stat = zkc.exists(path, job_watcher);
+                                stat = zkc.exists(path, job_watcher);
                                 
                                 if(null == stat){
                                     //Exists in hashmap but the job doesn't exist
@@ -245,14 +249,18 @@ public class JobTracker {
                             else{
                                 packet.mStatus = JPacket.JOB_ERROR;
                             }
-                            out.writeObject(packet);
+                            if(zkc.exists(absolute_request_path, null) != null){
+                                zkc.getZooKeeper().setData(absolute_request_path, SerializerHelper.serialize(packet), -1);
+                            }
                         }
                         else{
                             //client sent us a new job.
                             if(jobMap.containsKey(packet.mPHash)){
                                 //This job has already been processed, let's check the hashmap
                                 packet.mStatus = JPacket.IN_PROGRESS;
-                                out.writeObject(packet);
+                                if(zkc.exists(absolute_request_path, null) != null){
+                                    zkc.getZooKeeper().setData(absolute_request_path, SerializerHelper.serialize(packet), -1);
+                                }
                                 continue;
                             }
                             String new_job_path = jobPath + "/" + "job";
@@ -276,7 +284,9 @@ public class JobTracker {
                             jobMap.put(packet.mPHash, path);    //Insert new job into hashmap
                             
                             packet.mStatus = JPacket.IN_PROGRESS;
-                            out.writeObject(packet);
+                            if(zkc.exists(absolute_request_path, null) != null){
+                                zkc.getZooKeeper().setData(absolute_request_path, SerializerHelper.serialize(packet), -1);
+                            }
                         }
                      }
                      catch(IOException e){
@@ -304,6 +314,56 @@ public class JobTracker {
         });
 
         t.start();  //Start the new background thread
+    }
+    
+    public void initializeHashMaps(){
+        assert(workersMap != null && workersMap.isEmpty());
+        assert(jobMap != null && jobMap.isEmpty());
+        
+        
+        System.out.println("Initializing Hash Maps");
+        
+        try{
+            String absolutePath = jobPath; //Start with the jobPath
+            List<String> jobs = zkc.getZooKeeper().getChildren(jobPath, null);
+            Stat stat = null;
+            for(String job: jobs){
+                absolutePath = jobPath + "/" + job;
+                byte[] job_bytes = zkc.getZooKeeper().getData(absolutePath, null, stat);
+                JobNodeData jobNode =  (JobNodeData) SerializerHelper.deserialize(job_bytes);
+                jobMap.put(jobNode.mPassHash, absolutePath);
+
+                List<String> tasks = zkc.getZooKeeper().getChildren(absolutePath, null);
+                for(String task : tasks){
+                    //Go through all tasks and see the owners.
+                     absolutePath = jobPath + "/" + job + "/" + task;
+                     byte[] task_bytes = zkc.getZooKeeper().getData(absolutePath, null, stat);
+                     TaskNodeData taskNode =  (TaskNodeData) SerializerHelper.deserialize(task_bytes);
+                     if(taskNode.mOwner != null){
+                        workersMap.put(taskNode.mOwner, absolutePath); 
+                     }
+                }
+            }
+        }catch(IOException e){
+            System.err.println("[JobTracker] Socket Closed");
+            System.err.println(e.getMessage());
+            return;
+        }
+        catch(ClassNotFoundException e){
+            System.err.println("[JobTracker] Class not found.");
+            System.err.println(e.getMessage());
+            System.exit(-1);
+        }
+        catch(KeeperException e){
+            System.err.println("[JobTracker] KeeperException");
+            System.err.println(e.getMessage());
+            System.exit(-1);
+        }
+        catch(InterruptedException e){
+            System.err.println("[JobTracker] InterruptedException");
+            System.err.println(e.getMessage());
+            System.exit(-1);
+        }
     }
     
     public void handleEvent(WatchedEvent event){
@@ -463,6 +523,21 @@ public class JobTracker {
           System.exit(-1);
         }
 
+    }
+    
+    public void handleRequestEvent(WatchedEvent event){
+        //Get the updated group of workers.
+        String path = event.getPath();
+        EventType type = event.getType();
+        Stat stat = null;
+        if (type == Watcher.Event.EventType.NodeChildrenChanged ) {
+            //Node's been deleted, we don't care anymore
+
+            return;
+        }  
+        //not sure if we need anything
+        
+        
     }
     
     public static void main (String [] args){
